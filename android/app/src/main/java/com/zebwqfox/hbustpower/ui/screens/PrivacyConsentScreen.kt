@@ -3,17 +3,11 @@ package com.zebwqfox.hbustpower.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material3.Icon
@@ -31,7 +25,6 @@ import androidx.compose.ui.unit.sp
 import com.zebwqfox.hbustpower.model.LegalDocuments
 import com.zebwqfox.hbustpower.ui.PageColumn
 import com.zebwqfox.hbustpower.ui.components.PowerButton
-import com.zebwqfox.hbustpower.ui.components.PowerCard
 import com.zebwqfox.hbustpower.ui.components.reveal
 import com.zebwqfox.hbustpower.ui.theme.Power
 
@@ -63,32 +56,13 @@ fun PrivacyConsentScreen(
                 color = colors.secondaryText, fontSize = 15.sp, textAlign = TextAlign.Center,
             )
         }
-        PowerCard(Modifier.reveal(1), padding = PaddingValues(20.dp)) {
-            Column(
-                Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                LegalDocuments.consentSummary.forEach { item ->
-                    Row {
-                        Text("·", color = colors.accent, fontSize = 15.sp)
-                        Spacer(Modifier.width(8.dp))
-                        Text(item, fontSize = 15.sp, lineHeight = 24.sp)
-                    }
-                }
-            }
-        }
-        Row(Modifier.fillMaxWidth().reveal(2), horizontalArrangement = Arrangement.Center) {
+        Row(Modifier.fillMaxWidth().reveal(1), horizontalArrangement = Arrangement.Center) {
             TextButton({ onOpenDocument(LegalDocuments.Document.PRIVACY) }) { Text("《隐私政策》", color = colors.accent) }
             TextButton({ onOpenDocument(LegalDocuments.Document.AGREEMENT) }) { Text("《用户服务协议》", color = colors.accent) }
         }
-        PowerButton("同意并继续", onAgree, primary = true, modifier = Modifier.reveal(3))
+        PowerButton("同意并继续", onAgree, primary = true, modifier = Modifier.reveal(2))
         TextButton(onDecline, modifier = Modifier.fillMaxWidth()) {
             Text("不同意并退出", color = colors.secondaryText, fontSize = 15.sp)
         }
-        Text(
-            "不同意不影响你在学校官方渠道查询电量。",
-            color = colors.tertiaryText, fontSize = 12.sp, textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-        )
     }
 }

@@ -26,7 +26,7 @@ footer { max-width: 720px; margin: 16px auto 0; color: var(--muted); font-size: 
 <main>
 <h1>湖科电量 隐私政策</h1>
 <em class="meta">生效日期：2026年9月22日</em>
-<em class="meta">版本：1.9.0</em>
+<em class="meta">版本：1.9.1</em>
 <p>湖科电量（以下简称&quot;本应用&quot;）是一款由个人开发者独立开发的宿舍电量查询工具。本应用没有自己的服务器，不会把你的任何信息上传给开发者。请在使用前阅读本政策，尤其是加粗内容。</p>
 <h2>一、我们不收集什么</h2>
 <p>开发者<strong>不收集、不存储、不共享</strong>你的任何个人信息。本应用没有后台服务器、没有账号体系、没有统计或广告 SDK，因此：</p>
@@ -44,7 +44,7 @@ footer { max-width: 720px; margin: 16px auto 0; color: var(--muted); font-size: 
 <table><thead><tr><th>内容</th><th>用途</th><th>存储方式</th></tr></thead><tbody>
 <tr><td>学校电费系统的授权链接</td><td>下次打开时免重复登录</td><td>Android Keystore 加密后存入应用私有目录</td></tr>
 <tr><td>学校站点的会话 Cookie</td><td>维持登录状态、读取电量</td><td>系统 WebView Cookie 存储（应用私有）</td></tr>
-<tr><td>低电量提醒阈值、是否开启离线演示、是否已完成首次引导、是否已同意本政策</td><td>保存你的设置</td><td>应用私有配置文件</td></tr>
+<tr><td>低电量提醒阈值、是否已完成首次引导、是否已同意本政策</td><td>保存你的设置</td><td>应用私有配置文件</td></tr>
 <tr><td>最近一次读取到的宿舍号、剩余电量、更新时间</td><td>通知与界面展示</td><td>应用私有配置文件</td></tr>
 <tr><td>本次运行的诊断日志（最多 60 条）</td><td>排查问题</td><td>仅内存，关闭应用即清空，不含账号、密码、授权链接或 Cookie 内容</td></tr>
 </tbody></table>
@@ -58,7 +58,7 @@ footer { max-width: 720px; margin: 16px auto 0; color: var(--muted); font-size: 
 <h2>五、权限说明</h2>
 <p>本应用只申请两项权限，均可拒绝，拒绝后不影响核心功能以外的使用：</p>
 <table><thead><tr><th>权限</th><th>用途</th><th>拒绝的后果</th></tr></thead><tbody>
-<tr><td>网络访问（INTERNET）</td><td>读取学校系统的电量、用量、充值记录与校园卡余额</td><td>无法查询真实数据，仍可使用离线演示</td></tr>
+<tr><td>网络访问（INTERNET）</td><td>读取学校系统的电量、用量、充值记录与校园卡余额</td><td>无法查询电量与校园卡数据</td></tr>
 <tr><td>发送通知（POST_NOTIFICATIONS，Android 13 及以上）</td><td>电量低于你设定的阈值时提醒一次</td><td>不再收到低电量提醒，其他功能正常</td></tr>
 </tbody></table>
 <p>本应用<strong>不申请</strong>位置、相机、麦克风、通讯录、短信、电话、存储、后台定位、读取应用列表等权限，也不在后台持续定位或常驻监听。</p>

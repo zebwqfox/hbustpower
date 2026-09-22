@@ -79,10 +79,6 @@ class AppSettings(context: Context) {
         set(value) = prefs.edit { putBoolean(NOTIFICATION_DEFERRED, value) }
 
 
-    var demoMode: Boolean
-        get() = prefs.getBoolean(DEMO_MODE, false)
-        set(value) = prefs.edit { putBoolean(DEMO_MODE, value) }
-
     /** The privacy policy version the user agreed to; 0 means never. */
     var acceptedConsentVersion: Int
         get() = prefs.getInt(CONSENT_VERSION, 0)
@@ -123,7 +119,6 @@ class AppSettings(context: Context) {
         private const val THRESHOLD = "low_balance_threshold"
         const val FIRST_RUN_COMPLETE = "first_run_complete"
         private const val NOTIFICATION_DEFERRED = "notification_permission_deferred"
-        private const val DEMO_MODE = "demo_mode"
         private const val CONSENT_VERSION = "accepted_consent_version"
         private const val THEME = "theme_style"
         private const val ROOMMATES = "roommates"

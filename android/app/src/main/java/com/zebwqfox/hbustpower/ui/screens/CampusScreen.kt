@@ -57,7 +57,7 @@ fun CampusScreen(model: PowerViewModel, onConnect: () -> Unit) {
     val owner = LocalLifecycleOwner.current
 
     // Entering the tab reads; leaving cancels so stale results never overwrite newer ones.
-    DisposableEffect(card, model.demoMode) {
+    DisposableEffect(card) {
         card.onTabEntered()
         onDispose { card.onPageStopped() }
     }
@@ -112,7 +112,7 @@ fun CampusScreen(model: PowerViewModel, onConnect: () -> Unit) {
                 if (card.loading) CircularProgressIndicator(Modifier.size(22.dp), color = colors.accent, strokeWidth = 2.dp)
                 card.note?.let { Text(it, color = colors.secondaryText, fontSize = 13.sp, textAlign = TextAlign.Center) }
             }
-            if (card.showConnect && !model.demoMode) {
+            if (card.showConnect) {
                 PowerButton("连接校园卡", onConnect, icon = Icons.Filled.Person)
             }
             PowerButton(
@@ -126,7 +126,6 @@ fun CampusScreen(model: PowerViewModel, onConnect: () -> Unit) {
                 },
                 icon = Icons.AutoMirrored.Filled.OpenInNew,
                 primary = true,
-                enabled = !model.demoMode,
             )
             Text(
                 "在学校官方网页中自行选择卡片充值，本应用不会代为付款。返回应用后会重新查询余额。",

@@ -2,7 +2,6 @@ package com.zebwqfox.hbustpower.ui
 
 import android.Manifest
 import android.os.Build
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -227,7 +226,6 @@ private fun FirstRunScreen(model: PowerViewModel) {
 @Composable
 private fun MainShell(model: PowerViewModel) {
     val colors = Power.colors
-    val context = LocalContext.current
     val haptics = rememberHaptics()
     val layout = LocalPowerLayout.current
     var selected by rememberSaveable { mutableIntStateOf(0) }
@@ -246,8 +244,7 @@ private fun MainShell(model: PowerViewModel) {
         select(MainTab.USAGE.ordinal)
     }
     fun openRecharge() {
-        if (model.demoMode) Toast.makeText(context, "离线演示模式不会打开学校充值页面", Toast.LENGTH_SHORT).show()
-        else if (model.status == PowerStatus.Ready) overlay = "recharge"
+        if (model.status == PowerStatus.Ready) overlay = "recharge"
     }
     val openLogin = { overlay = "login" }
 

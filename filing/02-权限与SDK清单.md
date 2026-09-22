@@ -1,12 +1,12 @@
 # 权限与第三方 SDK 清单
 
-备案与应用商店上架都会要求这两张表，内容必须与安装包实际情况一致。以下信息取自 `android/app/src/main/AndroidManifest.xml` 与 `android/app/build.gradle.kts`，版本 1.9.0。
+备案与应用商店上架都会要求这两张表，内容必须与安装包实际情况一致。以下信息取自 `android/app/src/main/AndroidManifest.xml` 与 `android/app/build.gradle.kts`，版本 1.9.1。
 
 ## 一、应用申请的权限
 
 | 权限 | 类型 | 使用场景 | 调用时机 | 拒绝后的影响 |
 |---|---|---|---|---|
-| `android.permission.INTERNET` | 普通权限，安装时授予 | 访问学校电费系统与一卡通门户，读取电量、用量、充值记录、校园卡余额 | 用户同意隐私政策并登录后 | 无法查询真实数据，可使用离线演示 |
+| `android.permission.INTERNET` | 普通权限，安装时授予 | 访问学校电费系统与一卡通门户，读取电量、用量、充值记录、校园卡余额 | 用户同意隐私政策并登录后 | 无法查询电量与校园卡数据 |
 | `android.permission.POST_NOTIFICATIONS` | 运行时权限（Android 13+） | 剩余电量低于用户设定值时，在本机发出一次提醒 | 首次引导页由用户主动点击"开启通知"时弹窗申请 | 不再收到低电量提醒，其余功能不受影响 |
 | `com.zebwqfox.hbustpower.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | 自定义签名级权限 | **由 AndroidX 组件自动生成**，用于限制应用内部动态广播只能被本应用接收，不涉及用户信息 | 系统内部 | 不适用 |
 

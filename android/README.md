@@ -1,6 +1,6 @@
-# 湖科电量 Android 1.9.0
+# 湖科电量 Android 1.9.1
 
-包名 `com.zebwqfox.hbustpower`。原生 Kotlin + Jetpack Compose，对齐仓库内 iOS 1.9.0 的功能。五个标签：电量、用量、充值记录、校园卡、设置；另有关于、更新日志、调试与诊断、记录详情、学习通登录和官方充值页。
+包名 `com.zebwqfox.hbustpower`。原生 Kotlin + Jetpack Compose，基于仓库内 iOS 客户端的功能开发。五个标签：电量、用量、充值记录、校园卡、设置；另有关于、更新日志、调试与诊断、记录详情、学习通登录和官方充值页。
 
 ## 构建
 
@@ -28,10 +28,9 @@ $env:JAVA_TOOL_OPTIONS="-Djdk.net.unixdomain.tmpdir=C:\hbtmp -Djava.io.tmpdir=C:
 - release 签名从 `keystore.properties` 读取（已 gitignore）；`tools/Get-FilingSignature.ps1` 可导出备案要填的应用公钥与签名 MD5/SHA-1/SHA-256。
 - 备案材料与办理步骤见仓库根目录的 `filing/`。
 
-## 运行模式
+## 学校数据
 
-- **离线演示**：欢迎页“先看看离线演示”或“设置 → 学校接入 → 离线演示”。数据为示例（与 iOS `--ui-preview` 相同），界面会标明；演示模式不发送低电量提醒、不打开充值页。
-- **学校数据**：使用学校指定的学习通授权入口（`data/SchoolEndpoints.kt`），用户无需配置。
+应用使用学校指定的学习通授权入口（`data/SchoolEndpoints.kt`），用户无需配置。
 
 ## 实现要点
 

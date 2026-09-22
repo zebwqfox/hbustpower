@@ -13,7 +13,6 @@ import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PrivacyTip
-import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
@@ -78,7 +77,6 @@ fun SettingsScreen(model: PowerViewModel, onOpen: (String) -> Unit, onLogin: () 
         )
         GroupedSection(
             "账户",
-            footer = "登录授权仅保存在本机，由 Android Keystore 加密；应用不保存密码。",
             rows = listOf(
                 { GroupedRow("重新登录智慧湖科", icon = Icons.Filled.AccountCircle, disclosure = true, onClick = onLogin) },
                 { GroupedRow("清除登录信息", icon = Icons.Filled.Delete, tint = colors.danger, titleColor = colors.danger) { dialog = "clear" } },
@@ -86,14 +84,8 @@ fun SettingsScreen(model: PowerViewModel, onOpen: (String) -> Unit, onLogin: () 
         )
         GroupedSection(
             "调试",
-            footer = "离线演示用示例数据展示界面，不会访问学校系统，也不会发送提醒。",
             rows = listOf(
                 { GroupedRow("调试与诊断", "通知 · 连接 · 日志", Icons.Filled.MedicalServices, stacked = true) { onOpen("debug") } },
-                {
-                    GroupedRow("离线演示", if (model.demoMode) "已开启" else "关闭", Icons.Filled.Science, disclosure = true) {
-                        if (model.demoMode) model.exitDemo() else model.enterDemo()
-                    }
-                },
             ),
         )
         GroupedSection(

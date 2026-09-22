@@ -1,6 +1,5 @@
 package com.zebwqfox.hbustpower.ui
 
-import com.zebwqfox.hbustpower.data.DemoData
 import com.zebwqfox.hbustpower.model.ElectricitySnapshot
 import com.zebwqfox.hbustpower.model.RechargeRecord
 import com.zebwqfox.hbustpower.model.UsageRecord
@@ -70,12 +69,12 @@ class ScreenRulesTest {
         first.second.forEach { assertTrue(it.end.y in 0.0..8.0 * 1.2) }
     }
 
-    @Test fun recordsAreNewestFirstAndDemoDataFeedsInsights() {
+    @Test fun recordsAreNewestFirstAndSnapshotFeedsInsights() {
         val older = RechargeRecord(Instant.ofEpochSecond(10), "1元", "1度", "一卡通充值", "东10", null)
         val newer = older.copy(occurredAt = Instant.ofEpochSecond(20))
         assertEquals(listOf(newer, older), sortedRecords(listOf(older, newer)))
-        val demo = DemoData.snapshot(Instant.parse("2026-09-17T03:00:00Z"))
-        assertEquals(14, demo.dailyPoints().size)
-        assertTrue(com.zebwqfox.hbustpower.model.UsageInsights.make(demo, demo.fetchedAt).any { it.id == "week" })
+        val current = snapshot(194.67, 2.0, 8.0, 14)
+        assertEquals(14, current.dailyPoints().size)
+        assertTrue(com.zebwqfox.hbustpower.model.UsageInsights.make(current, current.fetchedAt).any { it.id == "week" })
     }
 }

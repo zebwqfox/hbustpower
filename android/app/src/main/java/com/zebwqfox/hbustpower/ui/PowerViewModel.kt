@@ -13,7 +13,6 @@ import androidx.lifecycle.viewModelScope
 import com.zebwqfox.hbustpower.BuildConfig
 import com.zebwqfox.hbustpower.auth.ElectricityRedirectValidator
 import com.zebwqfox.hbustpower.data.AppSettings
-import com.zebwqfox.hbustpower.data.DemoData
 import com.zebwqfox.hbustpower.data.Diagnostics
 import com.zebwqfox.hbustpower.data.ElectricityException
 import com.zebwqfox.hbustpower.data.ElectricityService
@@ -37,7 +36,6 @@ import com.zebwqfox.hbustpower.web.WebScripts
 import com.zebwqfox.hbustpower.web.WebViewFactory
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -74,7 +72,6 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
     var snapshot by mutableStateOf<ElectricitySnapshot?>(null); private set
     var status by mutableStateOf<PowerStatus>(PowerStatus.Idle); private set
     var lowBalanceThreshold by mutableDoubleStateOf(settings.lowBalanceThreshold); private set
-    var demoMode by mutableStateOf(settings.demoMode); private set
     var hasSavedLogin by mutableStateOf(credentials.read(KeychainAccounts.REDIRECT) != null); private set
     var theme by mutableStateOf(PowerThemeStyle.of(settings.themeId)); private set
     var roommates by mutableIntStateOf(settings.roommates); private set
@@ -121,19 +118,14 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
         refreshJob?.cancel()
         refreshJob = viewModelScope.launch {
             try {
-                val value = if (demoMode) {
-                    delay(700)
-                    DemoData.snapshot()
-                } else {
-                    try {
-                        if (!hasSavedLogin && cookies.count(listOf(SchoolEndpoints.HOME_URL)) == 0) {
-                            throw ElectricityException.AuthenticationRequired()
-                        }
-                        service.fetchCurrentSession()
-                    } catch (error: ElectricityException.AuthenticationRequired) {
-                        Diagnostics.record("当前会话失效，尝试恢复本机登录")
-                        recoverSavedSession()
+                val value = try {
+                    if (!hasSavedLogin && cookies.count(listOf(SchoolEndpoints.HOME_URL)) == 0) {
+                        throw ElectricityException.AuthenticationRequired()
                     }
+                    service.fetchCurrentSession()
+                } catch (error: ElectricityException.AuthenticationRequired) {
+                    Diagnostics.record("当前会话失效，尝试恢复本机登录")
+                    recoverSavedSession()
                 }
                 apply(value)
             } catch (cancel: CancellationException) {
@@ -153,7 +145,6 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
 
     fun completeAuthentication(redirectUrl: String) {
         if (!ElectricityRedirectValidator.isValid(redirectUrl)) return
-        setDemo(false)
         beginRefresh()
         refreshJob?.cancel()
         refreshJob = viewModelScope.launch {
@@ -181,7 +172,6 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
         WebStorage.getInstance().deleteAllData()
         campusCard.reset(destroyPage = true)
         settings.saveSummary(null, null, null)
-        setDemo(false)
         snapshot = null
         status = PowerStatus.AuthenticationRequired
     }
@@ -202,27 +192,9 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
         if (!value.isFinite() || value <= 0) return
         settings.lowBalanceThreshold = value
         lowBalanceThreshold = value
-        if (!demoMode) snapshot?.let { current ->
+        snapshot?.let { current ->
             viewModelScope.launch { reminder.evaluate(current.purchasedKWh, value, current.room) }
         }
-    }
-
-
-    fun enterDemo() {
-        refreshJob?.cancel()
-        setDemo(true)
-        status = PowerStatus.Idle
-        started = true
-        refresh()
-    }
-
-    fun exitDemo() {
-        refreshJob?.cancel()
-        setDemo(false)
-        snapshot = null
-        campusCard.reset(destroyPage = false)
-        status = PowerStatus.Idle
-        refresh()
     }
 
     /**
@@ -240,11 +212,6 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
 
     fun newAuthWebView(): WebView = WebViewFactory.create(app, detachable = true)
 
-    private fun setDemo(value: Boolean) {
-        settings.demoMode = value
-        demoMode = value
-    }
-
     private suspend fun recoverSavedSession(): ElectricitySnapshot {
         val saved = credentials.read(KeychainAccounts.REDIRECT) ?: throw ElectricityException.AuthenticationRequired()
         return service.establishSession(saved)
@@ -254,7 +221,7 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
         refreshStartedAt = System.currentTimeMillis()
         lastRefreshResult = "正在刷新"
         status = PowerStatus.Loading
-        Diagnostics.record(if (demoMode) "开始读取演示电量" else "开始读取电量")
+        Diagnostics.record("开始读取电量")
     }
 
     private fun finishRefresh(result: String) {
@@ -268,11 +235,6 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
         finishRefresh("成功")
         snapshot = value
         status = PowerStatus.Ready
-        if (demoMode) {
-            // Demo data never drives real reminders or the resident notification.
-            settings.saveSummary(null, null, null)
-            return
-        }
         settings.saveSummary(value.room, value.purchasedKWh, value.fetchedAt.toEpochMilli())
         val threshold = lowBalanceThreshold
         viewModelScope.launch { reminder.evaluate(value.purchasedKWh, threshold, value.room) }

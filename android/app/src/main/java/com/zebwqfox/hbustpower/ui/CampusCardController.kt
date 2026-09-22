@@ -9,7 +9,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
-import com.zebwqfox.hbustpower.data.DemoData
 import com.zebwqfox.hbustpower.data.Diagnostics
 import com.zebwqfox.hbustpower.data.SchoolEndpoints
 import com.zebwqfox.hbustpower.web.WebScripts
@@ -62,11 +61,6 @@ class CampusCardController(private val model: PowerViewModel, private val script
 
     fun refresh(reusePage: Boolean = false) {
         cancel()
-        if (model.demoMode) {
-            display(DemoData.CAMPUS_CARD_BALANCE, 1)
-            note = "离线演示数据"
-            return
-        }
         note = if (amount != null) "更新中，显示上次余额" else null
         showConnect = false
         loading = true
@@ -132,7 +126,7 @@ class CampusCardController(private val model: PowerViewModel, private val script
         webView?.stopLoading()
     }
 
-    /** Sign-out, or demo mode ending: forget the portal session and the shown balance. */
+    /** Sign-out: forget the portal session and the shown balance. */
     fun reset(destroyPage: Boolean) {
         cancel()
         portalEstablished = false

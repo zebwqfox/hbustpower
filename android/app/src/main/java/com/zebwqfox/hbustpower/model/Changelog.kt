@@ -11,6 +11,13 @@ object Changelog {
     val latest: Release get() = releases.first()
 
     val releases: List<Release> = listOf(
+        Release("1.9.1", "登录页更清爽", "移除演示入口，直接连接学校数据。", listOf(
+            Section("调整", listOf(
+                "移除示例数据入口和相关设置",
+                "精简欢迎页、隐私同意页与账户设置中的说明文字",
+                "登录统一使用学校指定的学习通认证",
+            )),
+        )),
         Release("1.9.0", "换个颜色", "三套主题，两套来自朋友。", listOf(
             Section("新增", listOf(
                 "设置 → 外观 → 主题：湖科蓝、紫鸟紫、枫烻黄，切换后整个界面的配色一起变",

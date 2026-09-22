@@ -77,7 +77,7 @@ fun DebugScreen(model: PowerViewModel, onBack: () -> Unit) {
     val statusText = when (model.status) {
         PowerStatus.Idle -> "等待启动"
         PowerStatus.Loading -> "正在连接"
-        PowerStatus.Ready -> if (model.demoMode) "已取得演示电量" else "已取得电量"
+        PowerStatus.Ready -> "已取得电量"
         PowerStatus.AuthenticationRequired -> "需要登录"
         is PowerStatus.Error -> "连接失败（详见刷新结果）"
     }
@@ -112,10 +112,8 @@ fun DebugScreen(model: PowerViewModel, onBack: () -> Unit) {
             ),
         ),
         DebugSection(
-            "连接与数据", "刷新会读取学校真实数据，并执行正常低电量检查（演示模式不发提醒）。", listOf(
+            "连接与数据", "刷新会读取学校真实数据，并执行正常低电量检查。", listOf(
                 DebugRow("当前状态", statusText),
-                DebugRow("运行模式", if (model.demoMode) "离线演示" else "学校数据"),
-                DebugRow("本机登录凭据", if (model.hasSavedLogin) "已保存（有效性以连接结果为准）" else "未保存"),
                 DebugRow("学校会话 Cookie", "${model.cookies.count(SchoolEndpoints.sessionCookieUrls)} 条"),
                 DebugRow("最近刷新", model.lastRefreshResult + (model.lastRefreshDurationMillis?.let { String.format(Locale.ROOT, " · %.2f 秒", it / 1000.0) } ?: "")),
                 DebugRow("数据时间", snapshot?.let { formatDateTime(it.fetchedAt) } ?: "尚无数据"),

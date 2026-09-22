@@ -145,7 +145,7 @@ fun OverviewScreen(
             }
             when {
                 snapshot != null -> Dashboard(model, snapshot, liquid, onOpenUsage, onOpenRecords, onLogin, onRecharge)
-                status == PowerStatus.AuthenticationRequired -> Welcome(model, onLogin)
+                status == PowerStatus.AuthenticationRequired -> Welcome(onLogin)
                 else -> Connection(status, model::refresh)
             }
         }
@@ -180,13 +180,6 @@ private fun Dashboard(
                     enabled = model.status == PowerStatus.Ready, modifier = Modifier.weight(1f),
                 )
                 PowerButton("算一算", { planning = true }, icon = Icons.Filled.Calculate, modifier = Modifier.weight(0.62f))
-            }
-            if (model.demoMode) {
-                Text(
-                    "离线演示模式 · 数据为示例，不会访问学校系统",
-                    color = Power.colors.secondaryText, fontSize = 13.sp, textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
             }
         }
     }
@@ -683,7 +676,7 @@ private fun Connection(status: PowerStatus, onRetry: () -> Unit) {
         if (status is PowerStatus.Error) {
             Text("暂时无法更新", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.reveal(0))
             Text(
-                "${status.message}\n检查网络后再试一次。已有登录信息会继续保留。", color = colors.secondaryText,
+                "${status.message}\n检查网络后再试一次。", color = colors.secondaryText,
                 fontSize = 17.sp, textAlign = TextAlign.Center, modifier = Modifier.reveal(1),
             )
             PowerButton("重新连接", onRetry, icon = Icons.Filled.Refresh, primary = true, modifier = Modifier.reveal(2))
@@ -696,7 +689,7 @@ private fun Connection(status: PowerStatus, onRetry: () -> Unit) {
 }
 
 @Composable
-private fun Welcome(model: PowerViewModel, onLogin: () -> Unit) {
+private fun Welcome(onLogin: () -> Unit) {
     val colors = Power.colors
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         PowerIllustration(Modifier.reveal(0))
@@ -710,11 +703,6 @@ private fun Welcome(model: PowerViewModel, onLogin: () -> Unit) {
         )
         Spacer(Modifier.height(14.dp))
         PowerButton("登录智慧湖科", onLogin, icon = Icons.Filled.Person, primary = true, modifier = Modifier.reveal(3))
-        PowerButton("先看看离线演示", model::enterDemo, icon = Icons.Filled.Bolt, modifier = Modifier.reveal(4))
-        Text(
-            "通过学校账户连接 · 登录信息保存在本机", color = colors.secondaryText, fontSize = 12.sp,
-            textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
-        )
     }
 }
 

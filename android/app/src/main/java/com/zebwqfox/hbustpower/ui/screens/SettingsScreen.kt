@@ -140,7 +140,7 @@ fun SettingsScreen(model: PowerViewModel, onOpen: (String) -> Unit, onLogin: () 
                             Icons.Filled.Insights,
                             stacked = true,
                             trailing = {
-                                Switch(model.telemetryEnabled, { model.setTelemetryEnabled(it) })
+                                Switch(model.telemetryEnabled, { model.updateTelemetryEnabled(it) })
                             },
                         )
                     },

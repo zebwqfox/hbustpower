@@ -176,7 +176,7 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /** The consent screen's toggle and the settings switch both land here. */
-    fun setTelemetryEnabled(enabled: Boolean) {
+    fun updateTelemetryEnabled(enabled: Boolean) {
         telemetry.isEnabled = enabled
         telemetryEnabled = telemetry.isEnabled
         Diagnostics.record(if (enabled) "已开启匿名使用统计" else "已关闭匿名使用统计，并清除本机安装标识")

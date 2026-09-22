@@ -163,7 +163,7 @@ private fun ConsentGate(model: PowerViewModel) {
             onOpenDocument = { reading = it.name },
             telemetryAvailable = model.isTelemetryAvailable,
             telemetryEnabled = model.telemetryEnabled,
-            onTelemetryChanged = model::setTelemetryEnabled,
+            onTelemetryChanged = model::updateTelemetryEnabled,
         )
     }
 }

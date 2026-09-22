@@ -49,10 +49,10 @@ protocol CloudConfigFetching: Sendable {
     func fetch(etag: String?) async -> CloudFetch
 }
 
-/// Fetches the config over plain HTTPS with no cookies, no credentials and no identifying parameters: the
-/// request says nothing about who is asking beyond what any HTTPS request must reveal. An `ETag` keeps the
-/// daily check down to a few hundred bytes, and the response is capped so a wrong URL cannot pull something
-/// large onto someone's cellular plan.
+/// Fetches the config over plain HTTPS with no cookies, credentials or identifying parameters. A timestamp-only
+/// `cacheBust` parameter prevents a shared CDN from serving an older publication, while an `ETag` still lets the
+/// origin answer 304 when the file itself did not change. The response is capped so a wrong URL cannot pull
+/// something large onto someone's cellular plan.
 struct HTTPCloudConfigFetcher: CloudConfigFetching {
     static let maxBytes = 64 * 1024
 
@@ -78,9 +78,18 @@ struct HTTPCloudConfigFetcher: CloudConfigFetching {
 
     func fetch(etag: String?) async -> CloudFetch {
         guard let url else { return .failed("未配置更新地址") }
-        var request = URLRequest(url: url)
+        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        var queryItems = components?.queryItems ?? []
+        queryItems.append(URLQueryItem(
+            name: "cacheBust",
+            value: String(Int64(Date().timeIntervalSince1970 * 1_000))
+        ))
+        components?.queryItems = queryItems
+        guard let requestURL = components?.url else { return .failed("更新地址格式不正确") }
+        var request = URLRequest(url: requestURL)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
         request.setValue(TelemetryPayload.userAgent, forHTTPHeaderField: "User-Agent")
         if let etag { request.setValue(etag, forHTTPHeaderField: "If-None-Match") }
 

@@ -60,6 +60,7 @@ import com.zebwqfox.hbustpower.ui.components.pressable
 import com.zebwqfox.hbustpower.ui.components.rememberHaptics
 import com.zebwqfox.hbustpower.ui.theme.Power
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import com.zebwqfox.hbustpower.data.CloudConfig
 
 /** Sorted newest first, as the iOS table shows them. */
 fun sortedRecords(records: List<RechargeRecord>) = records.sortedByDescending { it.occurredAt }
@@ -78,12 +79,14 @@ fun RecordsScreen(model: PowerViewModel, onOpenRecord: (Int) -> Unit, onLogin: (
     ChargeRefreshBox(loading = status == PowerStatus.Loading, onRefresh = { haptics.soft(); model.refresh() }, succeeded = { model.status == PowerStatus.Ready }) {
         PageColumn {
             LargeTitleHeader("充值记录") {
-                RoundIconButton(Icons.Filled.AddCircle, "充值", {
-                    when (status) {
-                        PowerStatus.AuthenticationRequired -> onLogin()
-                        else -> { haptics.soft(); onRecharge() }
-                    }
-                }, enabled = status != PowerStatus.Loading || model.snapshot != null)
+                if (model.isFeatureEnabled(CloudConfig.FLAG_RECHARGE)) {
+                    RoundIconButton(Icons.Filled.AddCircle, "充值", {
+                        when (status) {
+                            PowerStatus.AuthenticationRequired -> onLogin()
+                            else -> { haptics.soft(); onRecharge() }
+                        }
+                    }, enabled = status != PowerStatus.Loading || model.snapshot != null)
+                }
             }
             if (records.isEmpty()) {
                 EmptyRecords(status, onLogin, model::refresh)

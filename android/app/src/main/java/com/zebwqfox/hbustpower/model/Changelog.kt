@@ -11,6 +11,14 @@ object Changelog {
     val latest: Release get() = releases.first()
 
     val releases: List<Release> = listOf(
+        Release("1.9.5", "远程开关全部生效", "公告及时刷新，关闭功能时不再留下其他入口。", listOf(
+            Section("修复", listOf(
+                "更新与公告请求会绕过 CDN 旧缓存，发布后立即生效；内容未变化时仍通过 ETag 返回 304",
+                "关闭充值后：首页、充值记录、校园卡页以及已打开的充值页都会立即停止入口",
+                "补齐 updateCheck 开关：可隐藏版本提示和手动检查，同时继续读取公告与其他功能开关",
+                "iOS 校园卡页面会在远端配置返回后立即响应开关，不再需要切换页面或再次回到前台",
+            )),
+        )),
         Release("1.9.4", "开关立刻生效", "学校页面出问题时，不用再等一天。", listOf(
             Section("改进", listOf(
                 "改成每次启动都检查一次更新与公告；回到前台也查，但最多每 30 分钟一次",

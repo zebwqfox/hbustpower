@@ -36,8 +36,9 @@ fun interface CloudConfigFetcher {
 /**
  * Fetches the config file over plain HTTPS with no cookies, no credentials and no identifying parameters: the
  * request says nothing about who is asking beyond what any HTTPS request must reveal. The response is capped at
- * [MAX_BYTES] so a wrong URL cannot make the app download something large, and an `ETag` keeps the daily check
- * down to a few hundred bytes.
+ * [MAX_BYTES] so a wrong URL cannot make the app download something large. A timestamp-only `cacheBust`
+ * parameter avoids a shared CDN serving an older publication; `ETag` still lets the origin answer 304 when
+ * the file itself did not change.
  */
 class HttpCloudConfigFetcher(
     private val url: String = CloudEndpoints.configUrl,
@@ -52,13 +53,14 @@ class HttpCloudConfigFetcher(
     }
 
     private fun request(etag: String?): CloudFetch {
-        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+        val connection = (URL(cacheBustedUrl(url, System.currentTimeMillis())).openConnection() as HttpURLConnection).apply {
             requestMethod = "GET"
             instanceFollowRedirects = false
             connectTimeout = timeoutMillis
             readTimeout = timeoutMillis
             useCaches = false
             setRequestProperty("Accept", "application/json")
+            setRequestProperty("Cache-Control", "no-cache")
             setRequestProperty("User-Agent", "HBUSTPower/${BuildConfig.VERSION_NAME} (Android)")
             etag?.let { setRequestProperty("If-None-Match", it) }
         }
@@ -90,4 +92,12 @@ class HttpCloudConfigFetcher(
     private companion object {
         const val MAX_BYTES = 64 * 1024
     }
+}
+
+internal fun cacheBustedUrl(url: String, timestampMillis: Long): String {
+    val fragmentAt = url.indexOf('#')
+    val base = if (fragmentAt >= 0) url.substring(0, fragmentAt) else url
+    val fragment = if (fragmentAt >= 0) url.substring(fragmentAt) else ""
+    val separator = if ('?' in base) '&' else '?'
+    return "$base${separator}cacheBust=$timestampMillis$fragment"
 }

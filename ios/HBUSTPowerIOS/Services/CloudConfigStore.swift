@@ -22,9 +22,9 @@ struct CloudConfigState: Equatable, Sendable {
     var isEmpty: Bool { config == .empty && lastCheckedAt == 0 }
 }
 
-/// Keeps the last config on disk and decides when to ask for a new one: once a day on launch, or whenever the
-/// user taps 检查更新. The cached copy is what the UI reads, so the app shows the same notice offline as it did
-/// online and never waits on the network to draw a screen.
+/// Keeps the last config on disk and decides when to ask for a new one: every launch, after 30 minutes in the
+/// foreground, or whenever the user taps 检查更新. The cached copy is what the UI reads, so the app shows the
+/// same notice offline as it did online and never waits on the network to draw a screen.
 ///
 /// Nothing here is sent anywhere. It reads a file and remembers what the user dismissed.
 @MainActor
@@ -88,7 +88,7 @@ final class CloudConfigStore {
         }
     }
 
-    /// Fetches unless the daily throttle says otherwise, stores what came back, and returns the state to show.
+    /// Fetches unless the foreground throttle says otherwise, stores what came back, and returns the state to show.
     func refresh(_ trigger: CloudRefreshTrigger) async -> CloudConfigState {
         guard shouldCheck(trigger) else { return state() }
 
@@ -122,6 +122,7 @@ final class CloudConfigStore {
     /// The update to offer, unless the user said 跳过这个版本 for exactly that build.
     func pendingUpdate(_ config: CloudConfig? = nil) -> CloudConfig.Update? {
         let config = config ?? cached()
+        guard config.isEnabled(CloudConfig.flagUpdateCheck) else { return nil }
         guard let update = config.updateAvailable(currentVersionCode: currentVersionCode) else { return nil }
         if config.mustUpgrade(currentVersionCode: currentVersionCode) { return update }
         return update.versionCode == skippedVersionCode ? nil : update

@@ -62,7 +62,7 @@ class CloudConfigRepository(
     }
 
     /**
-     * Fetches unless the daily throttle says otherwise, stores what came back, and returns the state to show.
+     * Fetches unless the foreground throttle says otherwise, stores what came back, and returns the state to show.
      * Blocking: call it off the main thread.
      */
     fun refresh(trigger: CloudRefreshTrigger): CloudConfigState {
@@ -95,7 +95,8 @@ class CloudConfigRepository(
 
     /** The update to offer, unless the user said "跳过这个版本" for exactly that build. */
     fun pendingUpdate(config: CloudConfig = cached()): CloudConfig.Update? =
-        config.updateAvailable(currentVersionCode)
+        config.takeIf { it.isEnabled(CloudConfig.FLAG_UPDATE_CHECK) }
+            ?.updateAvailable(currentVersionCode)
             ?.takeIf { config.mustUpgrade(currentVersionCode) || it.versionCode != skippedVersionCode }
 
     var skippedVersionCode: Int
@@ -120,7 +121,9 @@ class CloudConfigRepository(
     /** Feature switches fail open, so a missing or unreachable config changes nothing. */
     fun isEnabled(flag: String): Boolean = cached().isEnabled(flag)
 
-    fun mustUpgrade(): Boolean = cached().mustUpgrade(currentVersionCode)
+    fun mustUpgrade(): Boolean = cached().let { config ->
+        config.isEnabled(CloudConfig.FLAG_UPDATE_CHECK) && config.mustUpgrade(currentVersionCode)
+    }
 
     /** Forgets everything fetched, for the "清除本地数据" path in settings. */
     fun clear() = prefs.edit {

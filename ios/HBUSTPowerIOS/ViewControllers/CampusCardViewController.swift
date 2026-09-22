@@ -11,6 +11,7 @@ final class CampusCardViewController: UIViewController, WKNavigationDelegate {
     private let amount = UILabel.powerLabel("—", style: .largeTitle, weight: .semibold)
     private let note = UILabel.powerLabel(nil, style: .footnote, color: .secondaryLabel)
     private let login = PowerTheme.button("连接校园卡", image: "person.crop.circle")
+    private let recharge = PowerTheme.button("前往智慧湖科充值", image: "arrow.up.right", primary: true)
     private let spinner = UIActivityIndicatorView(style: .medium)
     /// Everything that makes up the working screen, hidden as one when the feature is switched off.
     private var liveViews: [UIView] = []
@@ -63,7 +64,6 @@ final class CampusCardViewController: UIViewController, WKNavigationDelegate {
         stack.addArrangedSubview(card)
         login.addAction(UIAction { [weak self] _ in self?.connect() }, for: .touchUpInside)
         stack.addArrangedSubview(login)
-        let recharge = PowerTheme.button("前往智慧湖科充值", image: "arrow.up.right", primary: true)
         recharge.addAction(UIAction { [weak self] _ in
             UIApplication.shared.open(CampusCardScripts.portalURL) { success in
                 if !success { DispatchQueue.main.async { self?.note.text = "无法打开智慧湖科，请稍后重试。" } }
@@ -71,7 +71,8 @@ final class CampusCardViewController: UIViewController, WKNavigationDelegate {
         }, for: .touchUpInside)
         stack.addArrangedSubview(recharge)
         stack.addArrangedSubview(unavailable)
-        liveViews = [card, login, recharge]
+        recharge.accessibilityIdentifier = "campus.recharge"
+        liveViews = [card, login]
         applyAvailability()
         webView.navigationDelegate = self
         webView.customUserAgent = AuthenticationScripts.mobileUserAgent
@@ -79,7 +80,11 @@ final class CampusCardViewController: UIViewController, WKNavigationDelegate {
         view.addSubview(webView)
         observer = NotificationCenter.default.addObserver(forName: .powerModelDidChange, object: model, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated {
-                guard let self, self.model.status == .authenticationRequired, !self.model.hasSavedLogin else { return }
+                guard let self else { return }
+                self.applyAvailability()
+                guard self.isAvailable,
+                      self.model.status == .authenticationRequired,
+                      !self.model.hasSavedLogin else { return }
                 self.generation += 1; self.task?.cancel(); self.watchdog?.cancel(); self.webView.stopLoading(); self.portalEstablished = false
                 self.hasBalance = false; self.amount.text = "—"; self.note.text = nil; self.login.isHidden = false; self.spinner.stopAnimating()
             }
@@ -106,8 +111,13 @@ final class CampusCardViewController: UIViewController, WKNavigationDelegate {
     private func applyAvailability() {
         let available = isAvailable
         liveViews.forEach { $0.isHidden = !available }
+        recharge.isHidden = !available || !model.isFeatureEnabled(CloudConfig.flagRecharge)
         unavailable.isHidden = available
         navigationItem.rightBarButtonItem?.isEnabled = available
+        if !available {
+            generation += 1
+            task?.cancel(); watchdog?.cancel(); webView.stopLoading(); spinner.stopAnimating()
+        }
     }
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)

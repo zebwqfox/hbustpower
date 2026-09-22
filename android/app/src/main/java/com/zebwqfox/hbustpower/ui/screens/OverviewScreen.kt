@@ -89,6 +89,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.zebwqfox.hbustpower.data.CloudConfig
 import com.zebwqfox.hbustpower.model.ElectricitySnapshot
 import com.zebwqfox.hbustpower.model.MeterKind
 import com.zebwqfox.hbustpower.model.MeterStatus
@@ -176,11 +177,17 @@ private fun Dashboard(
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             BalanceHero(model, snapshot, liquid, stickerWiggle, onOpenUsage, { planning = true }, { greeting = it }, Modifier.reveal(0))
             Row(Modifier.reveal(1), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                val rechargeEnabled = model.isFeatureEnabled(CloudConfig.FLAG_RECHARGE)
+                if (rechargeEnabled) {
+                    PowerButton(
+                        "电费充值", onRecharge, icon = Icons.Filled.Add, primary = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
                 PowerButton(
-                    "电费充值", onRecharge, icon = Icons.Filled.Add, primary = true,
-                    modifier = Modifier.weight(1f),
+                    "算一算", { planning = true }, icon = Icons.Filled.Calculate,
+                    modifier = Modifier.weight(if (rechargeEnabled) 0.62f else 1f),
                 )
-                PowerButton("算一算", { planning = true }, icon = Icons.Filled.Calculate, modifier = Modifier.weight(0.62f))
             }
         }
     }

@@ -2,25 +2,42 @@ import UIKit
 import WebKit
 
 final class RechargeViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
+    private let model: AppModel
     private let webView: WKWebView
     private let progressView = UIProgressView(progressViewStyle: .bar)
     private let onFinish: () -> Void
     private var progressObservation: NSKeyValueObservation?
+    private var modelObserver: NSObjectProtocol?
     private var hasFinished = false
 
-    init(onFinish: @escaping () -> Void) {
+    init(model: AppModel, onFinish: @escaping () -> Void) {
+        self.model = model
         self.onFinish = onFinish
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .default()
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
         webView = WKWebView(frame: .zero, configuration: configuration)
         super.init(nibName: nil, bundle: nil)
+        modelObserver = NotificationCenter.default.addObserver(
+            forName: .powerModelDidChange, object: model, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, !self.model.isFeatureEnabled(CloudConfig.flagRecharge) else { return }
+                self.webView.stopLoading()
+                self.finishAndDismiss()
+            }
+        }
     }
 
     @available(*, unavailable) required init?(coder: NSCoder) { fatalError() }
+    deinit { if let modelObserver { NotificationCenter.default.removeObserver(modelObserver) } }
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        guard model.isFeatureEnabled(CloudConfig.flagRecharge) else {
+            dismiss(animated: false)
+            return
+        }
         title = "官方电费充值"
         view.backgroundColor = .systemBackground
         navigationItem.leftBarButtonItem = UIBarButtonItem(

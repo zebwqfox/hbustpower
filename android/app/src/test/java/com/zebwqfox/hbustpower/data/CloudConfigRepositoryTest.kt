@@ -160,6 +160,23 @@ class CloudConfigRepositoryTest {
     }
 
     @Test
+    fun `update check flag hides version offers without stopping notices`() {
+        val now = 1000L
+        val body = """{"minSupportedVersionCode":195,
+            "update":{"versionCode":200,"versionName":"2.0.0"},
+            "notice":{"id":"n1","body":"维护"},
+            "flags":{"updateCheck":false}}"""
+        val fetcher = RecordingFetcher { CloudFetch.Fresh(body, null) }
+        val repo = repository(fetcher, currentVersionCode = 190, now = { now })
+
+        repo.refresh(CloudRefreshTrigger.LAUNCH)
+
+        assertNull(repo.pendingUpdate())
+        assertFalse(repo.mustUpgrade())
+        assertEquals("n1", repo.activeNotice()?.id, "config fetches continue so notices and flags can recover")
+    }
+
+    @Test
     fun `a dismissed notice does not come back, a new one does`() {
         val now = 1000L
         val fetcher = RecordingFetcher { CloudFetch.Fresh(json(), null) }

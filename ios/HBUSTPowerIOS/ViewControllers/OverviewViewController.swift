@@ -163,6 +163,7 @@ final class OverviewViewController: ModelViewController {
         planButton.setContentHuggingPriority(.required, for: .horizontal)
         planButton.accessibilityLabel = "充多少合适，算一算"
         primaryColumn.addArrangedSubview(rechargeRow)
+        rechargeButton.accessibilityIdentifier = "overview.recharge"
         rechargeButton.addTarget(self, action: #selector(rechargeTapped), for: .touchUpInside)
         planButton.addAction(UIAction { [weak self] _ in self?.showPlanner() }, for: .touchUpInside)
         let usageHeader = DoodleHeadingView("每天用了多少", detail: "最近 7 个有记录日的平均用量", seed: 3)
@@ -394,7 +395,10 @@ final class OverviewViewController: ModelViewController {
 
     private func showPlanner() {
         guard presentedViewController == nil else { return }
-        let planner = RechargePlannerViewController(snapshot: model.snapshot) { [weak self] in self?.rechargeTapped() }
+        let planner = RechargePlannerViewController(
+            snapshot: model.snapshot,
+            allowsRecharge: model.isFeatureEnabled(CloudConfig.flagRecharge)
+        ) { [weak self] in self?.rechargeTapped() }
         let navigation = UINavigationController(rootViewController: planner)
         if let sheet = navigation.sheetPresentationController {
             sheet.detents = [.medium(), .large()]
@@ -439,8 +443,9 @@ final class OverviewViewController: ModelViewController {
         present(UINavigationController(rootViewController: AuthenticationViewController(model: model)), animated: true)
     }
     @objc private func rechargeTapped() {
-        guard model.status == .ready else { return }
-        let recharge = RechargeViewController { [weak self] in self?.model.refresh() }
+        guard model.status == .ready,
+              model.isFeatureEnabled(CloudConfig.flagRecharge) else { return }
+        let recharge = RechargeViewController(model: model) { [weak self] in self?.model.refresh() }
         let navigation = UINavigationController(rootViewController: recharge)
         navigation.modalPresentationStyle = .fullScreen
         present(navigation, animated: true)

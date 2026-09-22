@@ -52,19 +52,23 @@ final class AppModel {
     private(set) var pendingUpdate: CloudConfig.Update?
     private(set) var notice: CloudConfig.Notice?
 
-    /// False in builds without a config address compiled in: the update entry then stays hidden.
-    var isUpdateCheckAvailable: Bool { cloud.isConfigured }
+    /// False when the build has no config address or the published config hides version-update UI.
+    var isUpdateCheckAvailable: Bool {
+        cloud.isConfigured && cloudState.config.isEnabled(CloudConfig.flagUpdateCheck)
+    }
     var cloudConfigHost: String? { CloudEndpoints.configHost }
 
     /// True when this build is older than the oldest one the school pages still work with.
-    var mustUpgrade: Bool { cloudState.config.mustUpgrade(currentVersionCode: Bundle.main.versionCode) }
+    var mustUpgrade: Bool {
+        isUpdateCheckAvailable && cloudState.config.mustUpgrade(currentVersionCode: Bundle.main.versionCode)
+    }
 
     /// Feature switches fail open, so an unreachable config never takes a feature away.
     func isFeatureEnabled(_ flag: String) -> Bool { cloudState.config.isEnabled(flag) }
 
-    /// Reads the version/notice file from the developer's own site. A launch check is silent and happens at
-    /// most once a day; a manual check always asks and reports what went wrong. Nothing is sent: it is a plain
-    /// GET with no cookies and no parameters.
+    /// Reads the version/notice file from the developer's own site. A launch always checks; foreground checks
+    /// are throttled to 30 minutes; a manual check always asks and reports what went wrong. Nothing is sent: it
+    /// is a plain GET with no cookies and only a timestamp cache-busting parameter.
     func checkForUpdates(_ trigger: CloudRefreshTrigger) {
         guard hasStarted, cloud.isConfigured, cloudTask == nil else { return }
         guard cloud.shouldCheck(trigger) else {
@@ -102,7 +106,9 @@ final class AppModel {
     private func publishCloud(_ state: CloudConfigState) {
         cloudState = state
         cloudState.isChecking = false
-        pendingUpdate = cloud.pendingUpdate(state.config)
+        pendingUpdate = state.config.isEnabled(CloudConfig.flagUpdateCheck)
+            ? cloud.pendingUpdate(state.config)
+            : nil
         notice = cloud.activeNotice(state.config)
         notifyChange()
     }

@@ -8,6 +8,7 @@ final class RechargePlannerViewController: UIViewController {
 
     private let planner: RechargePlanner?
     private let onRecharge: () -> Void
+    private let allowsRecharge: Bool
     private var mode = Mode.amount
     private var amount: Double = 50
     private var roommates: Int {
@@ -30,8 +31,9 @@ final class RechargePlannerViewController: UIViewController {
     private let shareLabel = UILabel.powerLabel(nil, style: .title3, weight: .bold)
     private let stepper = UIStepper()
 
-    init(snapshot: ElectricitySnapshot?, onRecharge: @escaping () -> Void) {
+    init(snapshot: ElectricitySnapshot?, allowsRecharge: Bool = true, onRecharge: @escaping () -> Void) {
         planner = snapshot.flatMap(RechargePlanner.init(snapshot:))
+        self.allowsRecharge = allowsRecharge
         self.onRecharge = onRecharge
         super.init(nibName: nil, bundle: nil)
     }
@@ -101,6 +103,7 @@ final class RechargePlannerViewController: UIViewController {
         let copy = PowerTheme.button("复制给室友", image: "doc.on.doc")
         copy.addAction(UIAction { [weak self] _ in self?.copySummary() }, for: .touchUpInside)
         let go = PowerTheme.button("去充值", image: "bolt.fill", primary: true)
+        go.isHidden = !allowsRecharge
         go.addAction(UIAction { [weak self] _ in
             guard let self else { return }
             self.dismiss(animated: true) { self.onRecharge() }

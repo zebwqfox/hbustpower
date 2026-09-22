@@ -23,14 +23,17 @@ final class FeatureFlagWiringTests: XCTestCase {
     }
 
     /// Seeds the cache the way a completed fetch would, so the model picks it up when it is created.
-    private func model(flags: String) -> AppModel {
-        let json = #"{"flags":\#(flags)}"#
+    private func model(json: String) -> AppModel {
         defaults.set(Data(json.utf8), forKey: "cloudConfig.json")
         return AppModel(
             defaults: defaults,
             cloud: CloudConfigStore(defaults: defaults, fetcher: NeverFetches(), isConfigured: true),
             telemetry: TelemetryStore(defaults: defaults, sender: NeverSends(), isConfigured: false)
         )
+    }
+
+    private func model(flags: String) -> AppModel {
+        model(json: #"{"flags":\#(flags)}"#)
     }
 
     private struct NeverFetches: CloudConfigFetching {
@@ -71,6 +74,45 @@ final class FeatureFlagWiringTests: XCTestCase {
         XCTAssertNotNil(on.view.findSubview(withIdentifier: "campus.balance"))
         let unavailable = on.view.findSubview(ofType: FeatureUnavailableView.self)
         XCTAssertTrue(unavailable?.isHidden ?? true, "没关闭时不该出现“暂时不可用”")
+    }
+
+    func testUpdateCheckFlagHidesVersionUIButKeepsTheConfigUsable() {
+        let off = model(json: #"""
+        {
+            "minSupportedVersionCode": 999,
+            "update": {"versionCode": 999, "versionName": "9.9.9"},
+            "notice": {"id": "n1", "body": "维护"},
+            "flags": {"updateCheck": false}
+        }
+        """#)
+
+        XCTAssertFalse(off.isUpdateCheckAvailable)
+        XCTAssertFalse(off.mustUpgrade)
+        XCTAssertNil(off.pendingUpdate)
+        XCTAssertEqual(off.notice?.id, "n1", "公告仍要生效，配置读取不能被自己的开关永久关死")
+
+        XCTAssertTrue(model(flags: #"{"updateCheck": true}"#).isUpdateCheckAvailable)
+        XCTAssertTrue(model(flags: "{}").isUpdateCheckAvailable, "缺省继续保持开启")
+    }
+
+    func testRechargeFlagClosesEveryRechargeEntry() {
+        let appModel = model(flags: #"{"campusCard": true, "recharge": false}"#)
+
+        let overview = OverviewViewController(model: appModel)
+        overview.loadViewIfNeeded()
+        let overviewRecharge = overview.view.findAnySubview(withIdentifier: "overview.recharge")
+        XCTAssertNotNil(overviewRecharge)
+        XCTAssertTrue(overviewRecharge!.isHidden, "首页充值按钮必须隐藏")
+
+        let records = RecordsViewController(model: appModel)
+        records.loadViewIfNeeded()
+        XCTAssertNil(records.navigationItem.rightBarButtonItem, "充值记录页也不能留下充值入口")
+
+        let campus = CampusCardViewController(model: appModel)
+        campus.loadViewIfNeeded()
+        let campusRecharge = campus.view.findAnySubview(withIdentifier: "campus.recharge")
+        XCTAssertNotNil(campusRecharge)
+        XCTAssertTrue(campusRecharge!.isHidden, "校园卡页的学校充值入口也必须隐藏")
     }
 }
 
@@ -200,6 +242,14 @@ private extension UIView {
         if let match = self as? T { return match }
         for child in subviews {
             if let match = child.findAnySubview(ofType: type) { return match }
+        }
+        return nil
+    }
+
+    func findAnySubview(withIdentifier identifier: String) -> UIView? {
+        if accessibilityIdentifier == identifier { return self }
+        for child in subviews {
+            if let match = child.findAnySubview(withIdentifier: identifier) { return match }
         }
         return nil
     }

@@ -18,6 +18,19 @@ enum Changelog {
 
     static let releases: [Release] = [
         Release(
+            version: "1.10.5",
+            title: "远程开关全部生效",
+            summary: "公告及时刷新，关闭功能时不再留下其他入口。",
+            sections: [
+                Section(title: "修复", items: [
+                    "更新与公告请求会绕过 CDN 旧缓存，发布后立即生效；内容未变化时仍通过 ETag 返回 304",
+                    "关闭充值后：首页、充值记录、校园卡页、计算器和已打开的充值页都会立即停止入口",
+                    "校园卡页面会在远端配置返回后立即响应开关，不再需要切换页面或再次回到前台",
+                    "补齐 updateCheck 开关：可隐藏版本提示和手动检查，同时继续读取公告与其他功能开关",
+                ]),
+            ]
+        ),
+        Release(
             version: "1.10.4",
             title: "开关立刻生效",
             summary: "学校页面出问题时，不用再等一天。",

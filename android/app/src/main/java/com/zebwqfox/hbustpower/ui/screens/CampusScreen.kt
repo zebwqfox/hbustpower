@@ -125,22 +125,24 @@ fun CampusScreen(model: PowerViewModel, onConnect: () -> Unit) {
             if (card.showConnect) {
                 PowerButton("连接校园卡", onConnect, icon = Icons.Filled.Person)
             }
-            PowerButton(
-                "前往智慧湖科充值",
-                onClick = {
-                    try {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(model.authUrl)))
-                    } catch (_: ActivityNotFoundException) {
-                        android.widget.Toast.makeText(context, "无法打开智慧湖科，请稍后重试。", android.widget.Toast.LENGTH_SHORT).show()
-                    }
-                },
-                icon = Icons.AutoMirrored.Filled.OpenInNew,
-                primary = true,
-            )
-            Text(
-                "在学校官方网页中自行选择卡片充值，本应用不会代为付款。返回应用后会重新查询余额。",
-                color = colors.secondaryText, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
-            )
+            if (model.isFeatureEnabled(CloudConfig.FLAG_RECHARGE)) {
+                PowerButton(
+                    "前往智慧湖科充值",
+                    onClick = {
+                        try {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(model.authUrl)))
+                        } catch (_: ActivityNotFoundException) {
+                            android.widget.Toast.makeText(context, "无法打开智慧湖科，请稍后重试。", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    icon = Icons.AutoMirrored.Filled.OpenInNew,
+                    primary = true,
+                )
+                Text(
+                    "在学校官方网页中自行选择卡片充值，本应用不会代为付款。返回应用后会重新查询余额。",
+                    color = colors.secondaryText, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }

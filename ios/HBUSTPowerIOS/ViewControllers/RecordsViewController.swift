@@ -3,6 +3,7 @@ import UIKit
 final class RecordsViewController: ModelViewController, UITableViewDataSource, UITableViewDelegate {
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
     private var records: [RechargeRecord] = []
+    private var rechargeItem: UIBarButtonItem?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -26,6 +27,7 @@ final class RecordsViewController: ModelViewController, UITableViewDataSource, U
             primaryAction: UIAction { [weak self] _ in self?.rechargeTapped() }
         )
         recharge.tintColor = PowerTheme.accent
+        rechargeItem = recharge
         navigationItem.rightBarButtonItem = recharge
         tableView.translatesAutoresizingMaskIntoConstraints = false
         let refresh = ChargeRefreshControl()
@@ -44,7 +46,9 @@ final class RecordsViewController: ModelViewController, UITableViewDataSource, U
 
     override func modelDidChange() {
         guard isViewLoaded else { return }
-        navigationItem.rightBarButtonItem?.isEnabled = model.status != .loading
+        let rechargeEnabled = model.isFeatureEnabled(CloudConfig.flagRecharge)
+        navigationItem.rightBarButtonItem = rechargeEnabled ? rechargeItem : nil
+        rechargeItem?.isEnabled = model.status != .loading
         if model.status != .loading { (tableView.refreshControl as? ChargeRefreshControl)?.finish(success: model.status == .ready) }
         records = model.snapshot?.rechargeRecords.sorted { $0.date > $1.date } ?? []
         tableView.reloadData()
@@ -169,12 +173,13 @@ final class RecordsViewController: ModelViewController, UITableViewDataSource, U
     }
 
     private func rechargeTapped() {
+        guard model.isFeatureEnabled(CloudConfig.flagRecharge) else { return }
         guard model.status == .ready else {
             if model.status == .authenticationRequired { presentLoginIfNeeded() }
             return
         }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        let recharge = RechargeViewController { [weak self] in
+        let recharge = RechargeViewController(model: model) { [weak self] in
             self?.model.refresh()
         }
         let navigation = UINavigationController(rootViewController: recharge)

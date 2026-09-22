@@ -361,7 +361,14 @@ private fun MainShell(model: PowerViewModel) {
                         model, campus = current == "campus-login",
                         onClose = { overlay = null },
                     )
-                    "recharge" -> RechargeScreen(model) { overlay = null }
+                    "recharge" -> if (model.isFeatureEnabled(CloudConfig.FLAG_RECHARGE)) {
+                        RechargeScreen(model) { overlay = null }
+                    } else {
+                        LaunchedEffect(current) {
+                            overlay = null
+                            Toast.makeText(context, "学校充值页面暂时不可用，请到智慧湖科充值。", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
             }
         }

@@ -99,12 +99,14 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
     var pendingUpdate by mutableStateOf<CloudConfig.Update?>(null); private set
     var notice by mutableStateOf<CloudConfig.Notice?>(null); private set
 
-    /** False in builds without a config address compiled in: the update entry then stays hidden. */
-    val isUpdateCheckAvailable: Boolean get() = cloud.isConfigured
+    /** False when the build has no config address or the published config hides version-update UI. */
+    val isUpdateCheckAvailable: Boolean
+        get() = cloud.isConfigured && cloudState.config.isEnabled(CloudConfig.FLAG_UPDATE_CHECK)
     val cloudConfigHost: String? get() = CloudEndpoints.configHost
 
     /** True when this build is older than the oldest one the school pages still work with. */
-    val mustUpgrade: Boolean get() = cloudState.config.mustUpgrade(BuildConfig.VERSION_CODE)
+    val mustUpgrade: Boolean
+        get() = isUpdateCheckAvailable && cloudState.config.mustUpgrade(BuildConfig.VERSION_CODE)
 
     /**
      * Feature switches fail open, so an unreachable config never takes a feature away. Read from the snapshot
@@ -191,9 +193,10 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Reads the version/notice file from the developer's own site. A launch check is silent and happens at most
-     * once a day; a manual check always asks and reports what went wrong. Nothing is sent: it is a plain GET with
-     * no cookies and no parameters, and it never runs before the privacy policy is accepted.
+     * Reads the version/notice file from the developer's own site. A launch always checks; foreground checks are
+     * throttled to 30 minutes; a manual check always asks and reports what went wrong. Nothing is sent: it is a
+     * plain GET with no cookies and only a timestamp cache-busting parameter; it never runs before the privacy
+     * policy is accepted.
      */
     fun checkForUpdates(trigger: CloudRefreshTrigger) {
         if (!privacyAccepted || !cloud.isConfigured) return

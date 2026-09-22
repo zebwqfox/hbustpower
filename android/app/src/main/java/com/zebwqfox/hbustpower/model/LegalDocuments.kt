@@ -12,7 +12,7 @@ object LegalDocuments {
      * Raise this whenever the policy text changes in a way users must see again; the consent screen
      * reappears for everyone whose stored acceptance is older.
      */
-    const val CONSENT_VERSION = 5
+    const val CONSENT_VERSION = 6
 
     enum class Document(val title: String, internal val asset: String) {
         PRIVACY("隐私政策", "legal/privacy.md"),

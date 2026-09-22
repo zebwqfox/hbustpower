@@ -1,192 +1,194 @@
 <div align="center">
 
-# ⚡ 湖科电量 · HBUST Power
+# 湖科电量 · HBUST Power
 
-**Check your dorm's electricity balance in one glance — no more digging through the campus portal.**
+A native iOS app for checking your dorm's electricity balance at Hubei University of Science and Technology.
 
-A native iOS client for the Hubei University of Science and Technology dorm electricity service.
-Built with UIKit, iOS 26 Liquid Glass, and a fair amount of small delights.
+[简体中文](README.zh-CN.md) · English
 
 [![Platform](https://img.shields.io/badge/platform-iOS%2026%2B-000000?logo=apple&logoColor=white)](#requirements)
 [![Swift](https://img.shields.io/badge/Swift-5.0-F05138?logo=swift&logoColor=white)](#requirements)
-[![UI](https://img.shields.io/badge/UI-UIKit%20%2B%20Liquid%20Glass-0A84FF)](#requirements)
-[![Widgets](https://img.shields.io/badge/WidgetKit-Home%20%26%20Lock%20Screen-34C759)](#-home-screen--lock-screen-widgets)
-[![Foldable](https://img.shields.io/badge/iPhone%20Duo-adapted-8A5CF6)](#-foldable--large-screen)
-[![Tests](https://img.shields.io/badge/unit%20tests-26%20passing-2EA043)](#-testing)
+[![Tests](https://img.shields.io/badge/tests-26%20passing-2EA043)](#testing)
 
-<img src="docs/screenshots/home-light.png" width="260" alt="Home screen" />
-<img src="docs/screenshots/home-dark.png" width="260" alt="Home screen in dark mode" />
-<img src="docs/screenshots/usage-light.png" width="260" alt="Usage chart" />
+<img src="docs/screenshots/home-light.png" width="250" alt="Home screen" />
+<img src="docs/screenshots/home-dark.png" width="250" alt="Dark mode" />
+<img src="docs/screenshots/usage-light.png" width="250" alt="Usage chart" />
 
 </div>
 
----
+## Why this exists
 
-## Why
+The campus portal keeps the dorm electricity reading several taps deep. This app puts the two numbers that
+matter — how much is left, and how long it will last — on the first screen.
 
-The official campus app buries the dorm electricity reading several taps deep. This one answers the two
-questions that actually matter — **how much is left** and **how long will it last** — the moment you open it.
+Data comes straight from the school's own web services. There is no backend of mine in between, and the password
+is never stored.
 
-Everything is read straight from the school's own web services. No middle server, no account stored anywhere
-but your device's Keychain, no password ever saved.
+## Features
 
-## ✨ Features
-
-### The essentials
 | | |
 |---|---|
-| ⚡ **Balance at a glance** | Remaining kWh, estimated days left, subsidy and unit price |
-| 📊 **Usage trends** | Seven-day chart split into lighting and air conditioning; tap or drag to inspect a day |
-| 🧾 **Recharge history** | Amounts, kWh and dates, with a summary card and per-record details |
-| 💳 **Campus card balance** | Read through the official card portal, multiple cards summed |
-| 🔔 **Low-balance reminder** | One local notification when the balance first drops below your threshold |
-| 🩺 **Diagnostics page** | Notification state, session state, refresh timings and a redacted report you can copy |
+| Balance | Remaining kWh, estimated days left, subsidy and unit price |
+| Usage | Seven-day chart split into lighting and air conditioning; tap or drag to read a single day |
+| Recharges | History with a summary card, plus full details per record |
+| Campus card | Balance read through the official card portal, multiple cards summed |
+| Reminder | One local notification when the balance first falls below your threshold |
+| Diagnostics | Notification and session state, refresh timings, and a redacted report you can copy |
 
-### The delights
-- **Liquid balance card** — the card fills like a tank as your balance changes. Tilt the phone and it sloshes;
-  flick it sideways and the surface follows your finger.
-- **Pull to charge** — pull past the threshold, feel the click, let go and a ring spins while sparks fly. Success
-  fills it green with a checkmark; failure shakes it orange.
-- **Usage insights** — swipeable cards: *saved 12% this week*, *3 days below average*, *AC used 81% of your power*,
-  *your balance is worth ¥57*, *last recharged 12 days ago*.
-- **Recharge planner** — pick an amount to see how long it lasts, or pick a date to see what it costs. Split the
-  bill between roommates and copy the result into your dorm group chat.
-- **Hand-made touches** — doodled underlines, slightly crooked stickers, a taped paper note on the About page,
-  and an easter egg hiding in the developer avatar.
+A few extras beyond the basics:
 
-### 🎨 Themes
-Three palettes, switchable in **Settings → Appearance**. Two of them are modelled on friends' fursuits.
+- **Liquid balance card.** The card fills like a tank. Tilt the phone and the surface tilts with it; flick it
+  sideways and the liquid follows your finger.
+- **Pull to charge.** Pull past the threshold, let go, and a ring spins while the app fetches. Green checkmark on
+  success, orange shake on failure.
+- **Usage insights.** Swipeable cards: saved 12% this week, 3 days below average, AC used 81% of your power, your
+  balance is worth about ¥57, last recharged 12 days ago.
+- **Recharge planner.** Pick an amount to see how long it lasts, or pick a date to see what it costs. Splits the
+  bill by roommate count and copies a line you can paste into a group chat.
+- Doodled underlines, slightly crooked stickers, a paper note on the About page, and one easter egg.
+
+### Themes
+
+Three palettes in **Settings → Appearance**. Two are named after friends.
 
 | Theme | Palette | Extra |
 |---|---|---|
-| **湖科蓝** (HBUST Blue) | Cloud white + clear blue | The original look |
-| **紫鸟紫** (Purple Bird) | Night violet + amber | A line from Tagore's *Stray Birds* greets you on every launch |
-| **枫烻黄** (Maple Yellow) | Warm amber + collar red | A bell that swings when you tap it |
+| 湖科蓝 | Cloud white and blue | The original look |
+| 紫鸟紫 | Night violet and amber | A line from Tagore's *Stray Birds* on every launch |
+| 枫烻黄 | Warm amber and collar red | A bell that swings when tapped |
 
-Switching repaints everything — cards, charts, the liquid, sparks and the widgets.
+Switching a theme repaints everything: cards, charts, the liquid, the sparks, and the widgets.
 
 <div align="center">
-<img src="docs/screenshots/theme-picker.png" width="250" alt="Theme picker" />
-<img src="docs/screenshots/about.png" width="250" alt="About page" />
-<img src="docs/screenshots/changelog.png" width="250" alt="In-app changelog" />
+<img src="docs/screenshots/theme-picker.png" width="240" alt="Theme picker" />
+<img src="docs/screenshots/about.png" width="240" alt="About page" />
+<img src="docs/screenshots/changelog.png" width="240" alt="Changelog" />
 </div>
 
-### 📱 Home screen & lock screen widgets
-Small, medium, and all three lock-screen families, following the app's theme and turning amber when the balance
-runs low.
+### Widgets
+
+Small and medium home screen widgets, plus all three lock screen families. They follow the app's theme and turn
+amber when the balance runs low.
 
 <div align="center">
 <img src="docs/screenshots/widgets.png" width="300" alt="Widget preview" />
 </div>
 
-> **Note** · Widgets read the app's data through an **App Group** (`group.com.local.hbustpower`), which requires a
-> paid Apple Developer membership. Sideloading with a free Apple ID installs the extension but leaves it without
-> shared storage, so it will keep showing its "open the app once" placeholder. **Settings → Diagnostics → Widgets**
-> tells you whether the shared container is really available.
+> Widgets read the app's data through an App Group (`group.com.local.hbustpower`), which needs a paid Apple
+> Developer membership. Sideloading with a free Apple ID installs the extension but leaves it without shared
+> storage, so it keeps showing the "open the app once" placeholder. **Settings → Diagnostics → Widgets** reports
+> whether the shared container actually exists.
 
-### 📐 Foldable & large screen
-Adapted to iPhone Duo following Apple's guidance: layout decisions come from **size classes**, never from screen
-dimensions or orientation.
+### Foldables and large screens
 
-- Two even columns on the unfolded inner display and on iPad; one column on the outer display and on phones.
-- When half folded, the gap between the columns is aligned to the **exact hinge position**
-  (`reservedRegions(kind: .division)`, iOS 27.1+), so no card or button sits on the crease.
+Layout decisions come from size classes, not from screen dimensions or orientation.
+
+- Two even columns on an unfolded inner display and on iPad; one column on the outer display and on phones.
+- When half folded, the gap between the columns is aligned to the hinge position reported by
+  `reservedRegions(kind: .division)` (iOS 27.1+), so nothing interactive sits on the crease.
 - Content respects asymmetric safe areas, so the vertical bar on the outer display never covers anything.
-- Verified on the iPhone Duo simulator in all four poses: outer, inner landscape, inner portrait, half folded.
+- Checked on the iPhone Duo simulator in four poses: outer, inner landscape, inner portrait, half folded.
 
 <div align="center">
-<img src="docs/screenshots/duo-inner.png" width="380" alt="Unfolded inner display" />
-<img src="docs/screenshots/duo-half-folded.png" width="380" alt="Half folded, columns aligned to the hinge" />
+<img src="docs/screenshots/duo-inner.png" width="370" alt="Unfolded inner display" />
+<img src="docs/screenshots/duo-half-folded.png" width="370" alt="Half folded" />
 </div>
 
 <details>
-<summary><b>More screens</b></summary>
+<summary>More screens</summary>
 
 <div align="center">
-<img src="docs/screenshots/records-light.png" width="240" alt="Recharge history" />
-<img src="docs/screenshots/campus-card-1.6.0.png" width="240" alt="Campus card" />
-<img src="docs/screenshots/settings-light.png" width="240" alt="Settings" />
-<img src="docs/screenshots/xuexitong-glass-1.4.5.png" width="240" alt="Sign-in" />
+<img src="docs/screenshots/records-light.png" width="230" alt="Recharge history" />
+<img src="docs/screenshots/campus-card-1.6.0.png" width="230" alt="Campus card" />
+<img src="docs/screenshots/settings-light.png" width="230" alt="Settings" />
+<img src="docs/screenshots/xuexitong-glass-1.4.5.png" width="230" alt="Sign-in" />
 </div>
 
 </details>
 
-## 🔐 Privacy & security
+## Privacy
 
-- **The password never leaves the official page.** Sign-in happens on the school's own Chaoxing form; the app only
-  fills the fields you typed and never stores the password.
-- **Only the authorization link is kept**, in the Keychain with `AfterFirstUnlockThisDeviceOnly`.
-- **No backend.** All requests go directly to the school; nothing is proxied or collected.
-- **Diagnostics are redacted** — no account, dorm number, authorization URL or cookie values.
-- Redirect URLs are validated strictly: exact host, exact path, exactly one `appId=180` and one non-empty token.
+- Sign-in happens on the school's own Chaoxing page. The app fills the fields you typed and never saves the
+  password.
+- Only the authorization link is kept, in the Keychain with `AfterFirstUnlockThisDeviceOnly`.
+- No backend. Every request goes directly to the school.
+- Diagnostics contain no account, dorm number, authorization URL or cookie values.
+- Redirect URLs are checked strictly: exact host and path, exactly one `appId=180`, one non-empty token.
 
-## 🚀 Getting started
+## Getting started
 
 ### Requirements
-- Xcode 26 or newer (Xcode 27.1+ to run the iPhone Duo simulator)
-- iOS 26+ device or simulator
-- An Apple Developer account if you want working widgets (App Group capability)
 
-### Build and run
+- Xcode 26 or newer (27.1+ for the iPhone Duo simulator)
+- iOS 26 or newer
+- A paid Apple Developer team if you want the widgets to show real data
+
+### Build
+
 ```sh
 git clone https://github.com/zebwqfox/hbustpower.git
 cd hbustpower/ios
 open HBUSTPowerIOS.xcodeproj
 ```
-Select your team under **Signing & Capabilities**, pick a device, and run.
+
+Pick your team under Signing & Capabilities, select a device, and run.
 
 ### Configure the school entry point
+
 `ios/HBUSTPowerIOS/Services/ElectricityService.swift` holds the OAuth entry URL for the campus card service. The
-`appKey` is redacted in this repository:
+`appKey` is redacted here:
 
 ```
 appKey%3DREPLACE_WITH_YOUR_SCHOOL_APP_KEY
 ```
 
-Obtain the current value from the official campus portal entry before building. The other parameters (`fidEnc`,
-`mappId`, `wfwEnc`) are this school's configuration and are not portable to other universities.
+Get the current value from the official campus portal before building. The other parameters (`fidEnc`, `mappId`,
+`wfwEnc`) are this school's configuration and will not work elsewhere.
 
 ### Unsigned IPA for sideloading
+
 ```sh
 cd ios
 ./build_sideloadly_ipa.sh        # writes dist/湖科电量-iOS26-Sideloadly.ipa
 ```
-Drop the IPA into [Sideloadly](https://sideloadly.io) and let it re-sign with your Apple ID.
-**Leave "Use automatic bundle ID" unchecked** — it rewrites the app's bundle identifier, and the widget extension
-must stay prefixed by it, or iOS silently ignores the extension.
+
+Drop the IPA into [Sideloadly](https://sideloadly.io) and let it re-sign with your Apple ID. Leave
+**Use automatic bundle ID** unchecked: it rewrites the app's bundle identifier, and the widget extension must stay
+prefixed by it or iOS ignores the extension.
 
 ### Debug launch arguments
-Debug builds accept flags that make the UI easy to inspect offline:
 
-| Flag | What it does |
+Debug builds accept flags that make the UI easy to inspect offline.
+
+| Flag | Effect |
 |---|---|
 | `--ui-preview` | Offline demo data, no network |
 | `--preview-tab=1…4` | Open Usage / Recharges / Campus card / Settings |
-| `--preview-about`, `--preview-changelog`, `--preview-widgets` | Jump straight to those screens |
+| `--preview-about`, `--preview-changelog`, `--preview-widgets` | Jump to those screens |
 | `--slow-refresh-preview` | Delay the demo refresh by 3s to watch the charging animation |
 | `--liquid-gravity-x=-0.5` | Fake gravity to check the liquid's tilt direction |
-| `--simulate-vertical-bar` | Fake an asymmetric safe area, as on the Duo outer display |
+| `--simulate-vertical-bar` | Fake an asymmetric safe area, like the Duo outer display |
 
-## 🧱 Project layout
+## Project layout
 
 ```
 ios/
 ├─ HBUSTPowerIOS/
-│  ├─ Models/           AppModel, snapshots, insights, recharge planner, changelog
+│  ├─ Models/           App state, snapshots, insights, recharge planner, changelog
 │  ├─ Services/         Networking, HTML parsing, Keychain, notifications, diagnostics
-│  ├─ ViewControllers/  Overview, Usage, Records, Campus card, Settings, About, Planner…
+│  ├─ ViewControllers/  Overview, Usage, Records, Campus card, Settings, About, Planner
 │  └─ Views/            Theme, motion, charts, liquid, stickers, pull-to-charge
 ├─ HBUSTPowerWidgets/   WidgetKit extension
-├─ Shared/              Code shared by app and widgets (theme, snapshot, widget views)
+├─ Shared/              Code shared by app and widgets
 ├─ HBUSTPowerIOSTests/  Unit tests
 └─ WidgetSupport/       Widget Info.plist and entitlements
 ```
 
-**How the data flows.** The WebView completes the official sign-in, the app captures the electricity redirect,
-copies the school cookies into its HTTP session, then fetches three pages and parses them. Parsing lives in
-`ElectricityHTMLParser`, kept free of networking so it can be tested against fixtures.
+How data flows: a WebView completes the official sign-in, the app captures the electricity redirect, copies the
+school cookies into its HTTP session, then fetches three pages and parses them. Parsing lives in
+`ElectricityHTMLParser` with no networking in it, so it can be tested against fixtures.
 
-## 🧪 Testing
+## Testing
 
 ```sh
 cd ios
@@ -194,28 +196,21 @@ xcodebuild test -project HBUSTPowerIOS.xcodeproj -scheme '湖科电量' \
   -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
-26 unit tests cover the fragile parts: HTML parsing (missing fields must not bleed into the next record, dates are
-always Beijing time, a footer mentioning the auth service is not a login page), usage insights, the recharge
-planner's arithmetic, theme definitions, widget snapshots, and the changelog staying in sync with the app version.
+26 tests cover the fragile parts: HTML parsing (missing fields must not bleed into the next record, dates are
+always Beijing time, a footer mentioning the auth service is not a login page), usage insights, the planner's
+arithmetic, theme definitions, widget snapshots, and the changelog staying in sync with the app version.
 
-## 🗺️ Roadmap
+## Roadmap
 
 - [x] iOS app
 - [x] Themes, widgets, recharge planner
 - [x] iPhone Duo adaptation
-- [ ] Android client (Kotlin + Jetpack Compose) — coming to `android/` in this repository
-- [ ] Widgets verified on device with a paid signing team
+- [ ] Android client (Kotlin + Jetpack Compose), landing in `android/`
+- [ ] Widgets verified on a device with a paid signing team
 
-## 🙏 Credits
+## Credits
 
-- Sign-in runs through the official Chaoxing / HBUST campus services; the Chaoxing logo is used only to label
-  that sign-in path.
-- The **紫鸟紫** and **枫烻黄** palettes are named after and inspired by two friends.
-- *Stray Birds* lines are from Tagore's 1916 collection in Zheng Zhenduo's 1922 translation, both in the public
-  domain.
-
----
-
-<div align="center">
-<sub>Made with ⚡ &amp; ☕ · Built for one dorm, shared with whoever needs it.</sub>
-</div>
+- [@zebwqfox](https://github.com/zebwqfox) — author and maintainer
+- Sign-in runs through the official Chaoxing and HBUST services; the Chaoxing logo only labels that sign-in path.
+- The 紫鸟紫 and 枫烻黄 palettes are named after two friends.
+- *Stray Birds* lines come from Tagore's 1916 collection in Zheng Zhenduo's 1922 translation, both public domain.

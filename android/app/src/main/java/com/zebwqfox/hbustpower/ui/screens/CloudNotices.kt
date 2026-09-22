@@ -31,6 +31,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,12 +55,18 @@ import java.util.Locale
 @Composable
 fun NoticeBanner(notice: CloudConfig.Notice?, onDismiss: () -> Unit) {
     val colors = Power.colors
+    // AnimatedVisibility re-runs its content while the exit animation plays, and by then `notice` is already
+    // null. Without holding on to the last one, closing the card empties it instantly and the animation just
+    // shrinks a blank box. Keep it so the card itself fades out.
+    var lastShown by remember { mutableStateOf<CloudConfig.Notice?>(null) }
+    if (notice != null) lastShown = notice
+
     AnimatedVisibility(
         visible = notice != null,
         enter = if (Power.reduceMotion) fadeIn() else fadeIn() + expandVertically(),
         exit = if (Power.reduceMotion) fadeOut() else fadeOut() + shrinkVertically(),
     ) {
-        val current = notice ?: return@AnimatedVisibility
+        val current = lastShown ?: return@AnimatedVisibility
         val warning = current.level == CloudConfig.Notice.Level.WARNING
         val tint = if (warning) colors.danger else colors.accent
         Row(

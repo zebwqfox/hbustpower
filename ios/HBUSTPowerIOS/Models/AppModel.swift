@@ -169,6 +169,16 @@ final class AppModel {
 
     func start() {
 #if DEBUG
+        // Lets the notice banner be inspected without publishing anything real.
+        if let raw = CommandLine.arguments.first(where: { $0.hasPrefix("--preview-notice=") })?
+            .dropFirst("--preview-notice=".count) {
+            var notice = CloudConfig.Notice(id: "preview", body: String(raw))
+            notice.title = "学校系统维护"
+            notice.level = .warning
+            var config = CloudConfig()
+            config.notice = notice
+            publishCloud(CloudConfigState(config: config))
+        }
         if CommandLine.arguments.contains("--ui-preview") {
             applyPreviewSnapshot()
             return

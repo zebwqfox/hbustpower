@@ -66,6 +66,8 @@ fun GroupedRow(
     stacked: Boolean = false,
     disclosure: Boolean = false,
     enabled: Boolean = true,
+    /** A control that sits at the end of the row, such as a switch. Replaces the disclosure chevron. */
+    trailing: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
     val colors = Power.colors
@@ -87,7 +89,10 @@ fun GroupedRow(
             Text(title, fontSize = 17.sp, color = titleColor, modifier = Modifier.weight(1f))
             detail?.let { Text(it, color = colors.secondaryText, fontSize = 15.sp, modifier = Modifier.padding(start = 12.dp)) }
         }
-        if (disclosure || (stacked && onClick != null)) {
+        if (trailing != null) {
+            Spacer(Modifier.width(12.dp))
+            trailing()
+        } else if (disclosure || (stacked && onClick != null)) {
             Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, tint = colors.tertiaryText, modifier = Modifier.padding(start = 6.dp))
         }
     }

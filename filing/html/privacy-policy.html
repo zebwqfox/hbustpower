@@ -26,11 +26,12 @@ footer { max-width: 720px; margin: 16px auto 0; color: var(--muted); font-size: 
 <main>
 <h1>湖科电量 隐私政策</h1>
 <em class="meta">生效日期：2026年9月22日</em>
-<em class="meta">版本：1.9.1</em>
-<p>湖科电量（以下简称&quot;本应用&quot;）是一款由个人开发者独立开发的宿舍电量查询工具。本应用没有自己的服务器，不会把你的任何信息上传给开发者。请在使用前阅读本政策，尤其是加粗内容。</p>
+<em class="meta">版本：1.9.3</em>
+<p>湖科电量（以下简称&quot;本应用&quot;）是一款由个人开发者独立开发的宿舍电量查询工具，有 Android 与 iOS 两个版本，本政策同时适用于两者。本应用<strong>不会把你的账号、宿舍号、电量数据上传给开发者</strong>。与开发者站点有关的联网行为只有两项：读取版本与公告文件（第五条，只读不传），以及匿名使用统计（第六条，默认开启，<strong>在你点「同意并继续」之前的那一屏上就能关掉</strong>）。请在使用前阅读本政策，尤其是加粗内容。</p>
 <h2>一、我们不收集什么</h2>
-<p>开发者<strong>不收集、不存储、不共享</strong>你的任何个人信息。本应用没有后台服务器、没有账号体系、没有统计或广告 SDK，因此：</p>
-<ul><li>不会收集你的学号、姓名、手机号、身份证号、位置、通讯录、短信、相册、设备识别码（IMEI/OAID/Android ID）。</li></ul>
+<p>除第六条所述的匿名使用统计（你可以在同意本政策前或之后随时关闭）外，开发者<strong>不收集、不存储、不共享</strong>你的任何信息。本应用没有账号体系，没有第三方统计或广告 SDK。无论是否开启统计：</p>
+<ul><li><strong>永远不会</strong>收集你的学号、姓名、手机号、身份证号、位置、通讯录、短信、相册，以及 IMEI / OAID / Android ID（Android）或 IDFA / IDFV / 序列号（iOS）等设备识别码。</li></ul>
+<ul><li><strong>永远不会</strong>收集你的宿舍号、剩余电量、用量与充值记录——这些只在你的手机上显示。</li></ul>
 <ul><li>不会收集你的学习通账号和密码（见第二条）。</li></ul>
 <ul><li>不会生成用户画像、不做个性化推送、不做定向广告。</li></ul>
 <h2>二、账号与密码如何处理</h2>
@@ -42,8 +43,8 @@ footer { max-width: 720px; margin: 16px auto 0; color: var(--muted); font-size: 
 <h2>三、本机保存的信息</h2>
 <p>以下信息仅保存在你的手机本机，卸载应用即被删除，开发者无法访问：</p>
 <table><thead><tr><th>内容</th><th>用途</th><th>存储方式</th></tr></thead><tbody>
-<tr><td>学校电费系统的授权链接</td><td>下次打开时免重复登录</td><td>Android Keystore 加密后存入应用私有目录</td></tr>
-<tr><td>学校站点的会话 Cookie</td><td>维持登录状态、读取电量</td><td>系统 WebView Cookie 存储（应用私有）</td></tr>
+<tr><td>学校电费系统的授权链接</td><td>下次打开时免重复登录</td><td>Android：Keystore 加密后存入应用私有目录；iOS：系统钥匙串（<code>AfterFirstUnlockThisDeviceOnly</code>）</td></tr>
+<tr><td>学校站点的会话 Cookie</td><td>维持登录状态、读取电量</td><td>系统 WebView / WKWebView 的 Cookie 存储（应用私有）</td></tr>
 <tr><td>低电量提醒阈值、是否已完成首次引导、是否已同意本政策</td><td>保存你的设置</td><td>应用私有配置文件</td></tr>
 <tr><td>最近一次读取到的宿舍号、剩余电量、更新时间</td><td>通知与界面展示</td><td>应用私有配置文件</td></tr>
 <tr><td>本次运行的诊断日志（最多 60 条）</td><td>排查问题</td><td>仅内存，关闭应用即清空，不含账号、密码、授权链接或 Cookie 内容</td></tr>
@@ -54,38 +55,79 @@ footer { max-width: 720px; margin: 16px auto 0; color: var(--muted); font-size: 
 <ul><li><code>auth.chaoxing.com</code>、<code>passport2.chaoxing.com</code>：超星学习通官方身份验证。</li></ul>
 <ul><li><code>ecard.hbust.edu.cn</code>：湖北科技学院一卡通门户（授权跳转、校园卡余额）。</li></ul>
 <ul><li><code>xianankd.hbust.edu.cn</code>：学校宿舍电费系统（剩余电量、用量、充值记录）。</li></ul>
+<p>此外，为了告诉你有没有新版本，本应用还会访问开发者自己的站点：</p>
+<ul><li><code>hbustelec.imfurry.com</code>：读取一个固定的版本与公告文件（详见第五条）。</li></ul>
+<ul><li><code>cdn-imfurry.imfurry.com</code>：你点击&quot;去下载&quot;后，由浏览器从这里下载安装包。</li></ul>
+<ul><li>匿名使用统计保持开启时，还会向 <code>hbustelec.imfurry.com</code> 发送第六条列出的内容；关闭后不发送。</li></ul>
 <p>读取到的电量数据只显示在你的设备上，不经过开发者的任何服务器，也不出境传输。</p>
-<h2>五、权限说明</h2>
+<h2>五、检查更新与公告</h2>
+<p>为了在学校系统改版、或应用出现已知问题时能够通知到你，本应用会读取一个放在开发者站点上的<strong>静态文件</strong>，内容只有最新版本号、更新说明、下载地址、一条公告文字和几个功能开关。</p>
+<ul><li><strong>只读取，不上传。</strong> 这是一个普通的 GET 请求，不携带 Cookie、不携带账号、宿舍号、设备识别码或任何查询参数，开发者的站点除了常规 Web 日志中的访问时间与 IP 外不会获得任何信息，也不会用这些日志识别你。</li></ul>
+<ul><li><strong>什么时候发生。</strong> 你同意本政策之后，应用启动或回到前台时<strong>每天最多一次</strong>；此外只有你在 设置 → 更新 中手动点击&quot;检查更新&quot;时才会发生。</li></ul>
+<ul><li><strong>不会自动下载或安装。</strong> 发现新版本时只弹出提示，点&quot;去下载&quot;会跳转到你手机的浏览器，由你自行下载安装。<strong>本应用不具备、也不会执行任何形式的代码热更新。</strong></li></ul>
+<ul><li><strong>下载地址受限。</strong> 只接受 HTTPS，且域名必须是应用内置允许的地址，避免该文件被篡改后把你引导到陌生页面。</li></ul>
+<ul><li><strong>公告只是文字。</strong> 公告可以关闭，关闭记录只保存在本机；公告也会在设定的时间之后自动消失。</li></ul>
+<ul><li><strong>功能开关只能关闭本应用自己的界面入口</strong>（例如学校某个页面改版后暂时隐藏校园卡入口），不会下发任何可执行内容，也不会改变本政策承诺的数据处理方式。</li></ul>
+<ul><li>该文件读取失败时，应用一切照常，所有功能保持开启。</li></ul>
+<ul><li>你可以在 设置 → 调试与诊断 中看到这个地址，以及上次检查的时间。</li></ul>
+<h2>六、帮助改进（匿名使用统计）</h2>
+<p>这一项<strong>默认开启</strong>，但开关就摆在首次启动引导里、你点「同意并继续」（Android）或「开始使用」（iOS）之前的那一屏上——<strong>在同意本政策之前就可以把它关掉</strong>，关掉后本应用不会生成任何标识、也不会发送任何内容。开始使用之后，也可以随时在 <strong>设置 → 帮助改进</strong> 中关闭（两个版本都有这一项）。<strong>关闭完全不影响任何功能。</strong></p>
+<p>保持开启时，应用<strong>每天最多一次</strong>向 <code>hbustelec.imfurry.com</code> 发送下列内容，此外不发送任何东西：</p>
+<table><thead><tr><th>内容</th><th>例子</th><th>为什么需要</th></tr></thead><tbody>
+<tr><td>安装标识</td><td><code>3f2504e0-4f89-11d3-9a0c-0305e82c3301</code></td><td>一个<strong>由本应用随机生成</strong>的编号，用于区分&quot;同一台手机的多次上报&quot;和&quot;多台手机&quot;。它不来自任何硬件信息，无法反推设备或身份</td></tr>
+<tr><td>应用版本</td><td><code>1.9.3 (193)</code></td><td>判断新版本铺开了多少，决定旧版本还要支持多久</td></tr>
+<tr><td>系统版本</td><td><code>Android 14 (API 34)</code> / <code>iOS 18.2</code></td><td>决定还要兼容到哪个系统版本</td></tr>
+<tr><td>设备型号</td><td><code>Xiaomi 23127PN0CC</code> / <code>Apple iPhone16,2</code></td><td>排查只在某些机型上出现的问题</td></tr>
+<tr><td>处理器架构</td><td><code>arm64-v8a</code>（仅 Android）</td><td>同上</td></tr>
+<tr><td>语言</td><td><code>zh-CN</code></td><td>同上</td></tr>
+<tr><td>渠道</td><td><code>release</code></td><td>区分正式版与调试版</td></tr>
+</tbody></table>
+<p>关于这项统计：</p>
+<ul><li><strong>看得见。</strong> 设置 → 帮助改进 → &quot;看看会上报什么&quot;，逐项列出上面这些内容的真实取值。</li></ul>
+<ul><li><strong>关掉就没了。</strong> 关闭时本机保存的安装标识会一并删除，之后不再发送任何内容；再次开启会生成一个新的标识，与之前的记录无法关联。</li></ul>
+<ul><li><strong>可以换号。</strong> 在同一个页面可以随时&quot;重置安装标识&quot;。</li></ul>
+<ul><li><strong>不做画像。</strong> 这些数据只用于统计版本分布与机型分布，不用于识别个人、不做用户画像、不做推送或广告、不向任何第三方提供、不出境。</li></ul>
+<ul><li><strong>不记 IP。</strong> 服务端不记录、不存储请求来源 IP，也不把访问日志与上报数据关联。</li></ul>
+<ul><li><strong>可以删除。</strong> 把你的安装标识（在上面那个页面可以看到）发到 <code>zebwqfox@vip.qq.com</code>，开发者会删除与之对应的全部记录。</li></ul>
+<h2>七、权限说明</h2>
+<p>### Android</p>
 <p>本应用只申请两项权限，均可拒绝，拒绝后不影响核心功能以外的使用：</p>
 <table><thead><tr><th>权限</th><th>用途</th><th>拒绝的后果</th></tr></thead><tbody>
-<tr><td>网络访问（INTERNET）</td><td>读取学校系统的电量、用量、充值记录与校园卡余额</td><td>无法查询电量与校园卡数据</td></tr>
+<tr><td>网络访问（INTERNET）</td><td>读取学校系统的电量、用量、充值记录与校园卡余额；读取开发者站点上的版本与公告文件；统计未关闭时发送第六条所述内容</td><td>无法查询电量与校园卡数据</td></tr>
 <tr><td>发送通知（POST_NOTIFICATIONS，Android 13 及以上）</td><td>电量低于你设定的阈值时提醒一次</td><td>不再收到低电量提醒，其他功能正常</td></tr>
 </tbody></table>
 <p>本应用<strong>不申请</strong>位置、相机、麦克风、通讯录、短信、电话、存储、后台定位、读取应用列表等权限，也不在后台持续定位或常驻监听。</p>
-<h2>六、第三方 SDK</h2>
+<p>### iOS</p>
+<p>iOS 版仅在你同意后使用<strong>通知</strong>权限，用于低电量提醒；拒绝后其他功能一切正常。除此之外不请求任何权限，</p>
+<p><strong>不使用</strong> App Tracking Transparency（不做跨 App 跟踪）、不访问定位、相册、通讯录、相机、麦克风、健康数据。</p>
+<h2>八、第三方 SDK</h2>
 <p>本应用未集成统计、广告、推送等会收集个人信息的第三方 SDK。随应用打包的开源组件如下，均在本机运行、不联网上传数据：</p>
 <table><thead><tr><th>名称</th><th>提供方</th><th>用途</th><th>是否收集个人信息</th></tr></thead><tbody>
-<tr><td>AndroidX / Jetpack Compose</td><td>Google</td><td>界面框架、生命周期、窗口适配</td><td>否</td></tr>
+<tr><td>AndroidX / Jetpack Compose</td><td>Google</td><td>界面框架、生命周期、窗口适配（Android）</td><td>否</td></tr>
+<tr><td>UIKit / WidgetKit / WebKit</td><td>Apple</td><td>系统框架（iOS），随系统提供</td><td>否</td></tr>
 <tr><td>Kotlin 标准库与协程</td><td>JetBrains</td><td>语言运行时</td><td>否</td></tr>
-<tr><td>jsoup</td><td>jsoup.org</td><td>解析学校网页的 HTML</td><td>否</td></tr>
+<tr><td>jsoup</td><td>jsoup.org</td><td>解析学校网页的 HTML（Android）</td><td>否</td></tr>
 <tr><td>Backdrop、Shapes</td><td>Kyant0（开源）</td><td>界面材质绘制组件（当前版本已打包但未启用）</td><td>否</td></tr>
 <tr><td>desugar_jdk_libs</td><td>Google</td><td>兼容旧系统的日期时间 API</td><td>否</td></tr>
 </tbody></table>
-<h2>七、通知</h2>
+<h2>九、通知</h2>
 <p>低电量提醒由你的设备本地生成：应用在启动、回到前台或你手动刷新时读取电量，若低于设定阈值则发出一次本地通知。<strong>不使用任何第三方推送服务，不会有推广或营销通知。</strong></p>
-<h2>八、未成年人</h2>
+<h2>十、未成年人</h2>
 <p>本应用面向在校学生，不专门收集未成年人信息。若你是未满 14 周岁的未成年人，请在监护人指导下使用。</p>
-<h2>九、你的权利</h2>
+<h2>十一、你的权利</h2>
 <ul><li><strong>撤回登录授权</strong>：设置 → 账户 → 清除登录信息，会删除本机保存的授权链接与 Cookie。</li></ul>
 <ul><li><strong>关闭提醒</strong>：在系统设置中关闭本应用的通知权限。</li></ul>
+<ul><li><strong>不看公告与更新提示</strong>：公告可直接关闭；更新提示可选择&quot;跳过这个版本&quot;。</li></ul>
+<ul><li><strong>关闭统计</strong>：首次启动引导页，或此后的 设置 → 帮助改进；关闭后本机安装标识随即删除，不再发送任何内容。</li></ul>
+<ul><li><strong>删除已上报的统计</strong>：把你的安装标识发到 <code>zebwqfox@vip.qq.com</code>，开发者会删除对应的全部记录。</li></ul>
 <ul><li><strong>删除全部数据</strong>：卸载应用即可，开发者处没有你的任何数据副本。</li></ul>
 <ul><li><strong>查阅本政策</strong>：设置 → 关于 → 隐私政策，随时可查看当前版本。</li></ul>
-<p>由于开发者不持有你的数据，无法提供&quot;导出&quot;&quot;更正&quot;等需要服务端配合的操作。</p>
-<h2>十、政策更新</h2>
+<p>除第六条所述的匿名统计外，开发者不持有你的任何数据，因此无法提供&quot;导出&quot;&quot;更正&quot;等需要服务端配合的操作；统计数据本身不含可更正的个人内容，可直接要求删除。</p>
+<h2>十二、政策更新</h2>
 <p>本政策如有变更，会在应用内以弹窗形式再次征得你的同意，并更新页首的生效日期与版本号。</p>
-<h2>十一、联系方式</h2>
+<h2>十三、联系方式</h2>
 <p>开发者：中二（个人开发者）</p>
-<p>联系邮箱：&lt;!-- FILL:CONTACT_EMAIL 请填写可长期接收邮件的地址 --&gt;</p>
+<p>联系邮箱：zebwqfox@vip.qq.com</p>
 <p>本应用与湖北科技学院、超星学习通均无隶属或合作关系，数据来源于学校官方系统，商标与页面版权归各自权利人所有。</p>
 </main>
 <footer>本页面由 android/tools/sync-legal.py 从备案材料生成，请勿直接编辑。</footer>

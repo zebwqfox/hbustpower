@@ -15,6 +15,22 @@ val secretProperties = Properties().apply {
 }
 val schoolAppKey: String = secretProperties.getProperty("schoolAppKey") ?: ""
 
+// Where the app looks for the version/notice file, and which hosts it will hand a download link to.
+// Both are public values, so they live in gradle.properties and can be overridden per build with -P.
+// Leaving cloudConfigUrl empty compiles the whole cloud-config feature out: no requests, no UI.
+fun buildValue(name: String): String =
+    (providers.gradleProperty(name).orNull ?: secretProperties.getProperty(name) ?: "").trim()
+
+val cloudConfigUrl: String = buildValue("cloudConfigUrl")
+val cloudDownloadHosts: String = buildValue("cloudDownloadHosts")
+val telemetryUrl: String = buildValue("telemetryUrl")
+require(telemetryUrl.isEmpty() || telemetryUrl.startsWith("https://")) {
+    "telemetryUrl must be https:// (got: $telemetryUrl)"
+}
+require(cloudConfigUrl.isEmpty() || cloudConfigUrl.startsWith("https://")) {
+    "cloudConfigUrl must be https:// so the config cannot be rewritten in transit (got: $cloudConfigUrl)"
+}
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -30,12 +46,15 @@ android {
 
     defaultConfig {
         buildConfigField("String", "SCHOOL_APP_KEY", "\"$schoolAppKey\"")
+        buildConfigField("String", "CLOUD_CONFIG_URL", "\"$cloudConfigUrl\"")
+        buildConfigField("String", "CLOUD_DOWNLOAD_HOSTS", "\"$cloudDownloadHosts\"")
+        buildConfigField("String", "TELEMETRY_URL", "\"$telemetryUrl\"")
         applicationId = "com.zebwqfox.hbustpower"
         if (providers.gradleProperty("isolatedVerification").isPresent) applicationIdSuffix = ".verification"
         minSdk = 23
         targetSdk = 36
-        versionCode = 192
-        versionName = "1.9.2"
+        versionCode = 193
+        versionName = "1.9.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -109,6 +128,8 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:2.4.10")
+    // android.jar's org.json is stubbed out for JVM tests; this puts the real implementation on the test path.
+    testImplementation("org.json:json:20250107")
     // Reads fixtures/expected-1.7.1.json, the parser and insights contract generated from the iOS code.
     testImplementation("com.google.code.gson:gson:2.11.0")
 }

@@ -8,6 +8,8 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.SystemUpdateAlt
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.MedicalServices
 import androidx.compose.material.icons.filled.NotificationsActive
@@ -18,8 +20,10 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -33,6 +37,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.zebwqfox.hbustpower.BuildConfig
+import com.zebwqfox.hbustpower.data.CloudRefreshTrigger
 import com.zebwqfox.hbustpower.model.Changelog
 import com.zebwqfox.hbustpower.notification.PowerNotifications
 import com.zebwqfox.hbustpower.ui.LargeTitleHeader
@@ -42,6 +48,9 @@ import com.zebwqfox.hbustpower.ui.components.GroupedRow
 import com.zebwqfox.hbustpower.ui.components.GroupedSection
 import com.zebwqfox.hbustpower.ui.openNotificationSettings
 import com.zebwqfox.hbustpower.ui.theme.Power
+import android.widget.Toast
+import java.text.DateFormat
+import java.util.Date
 import java.util.Locale
 
 @Composable
@@ -58,6 +67,20 @@ fun SettingsScreen(model: PowerViewModel, onOpen: (String) -> Unit, onLogin: () 
         onDispose { owner.lifecycle.removeObserver(observer) }
     }
     val notificationsReady = remember(resumes) { PowerNotifications.canPost(context) }
+
+    // A manual check should say something either way, including "已是最新"; the launch check stays silent.
+    var awaitingCheck by remember { mutableStateOf(false) }
+    var updateDialog by remember { mutableStateOf(false) }
+    LaunchedEffect(model.cloudState.isChecking) {
+        if (model.cloudState.isChecking || !awaitingCheck) return@LaunchedEffect
+        awaitingCheck = false
+        val error = model.cloudState.error
+        when {
+            error != null -> Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+            model.pendingUpdate != null -> updateDialog = true
+            else -> Toast.makeText(context, "已是最新版本", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     PageColumn(spacing = 22.dp) {
         LargeTitleHeader("设置")
@@ -82,6 +105,49 @@ fun SettingsScreen(model: PowerViewModel, onOpen: (String) -> Unit, onLogin: () 
                 { GroupedRow("清除登录信息", icon = Icons.Filled.Delete, tint = colors.danger, titleColor = colors.danger) { dialog = "clear" } },
             ),
         )
+        if (model.isUpdateCheckAvailable) {
+            GroupedSection(
+                "更新",
+                footer = "只读取作者站点上的一个版本信息文件，不上传任何内容；应用不会自行下载或安装，点“去下载”后在浏览器里完成。",
+                rows = listOf(
+                    {
+                        GroupedRow(
+                            "检查更新",
+                            when {
+                                model.cloudState.isChecking -> "正在检查…"
+                                model.pendingUpdate != null -> "有新版本 ${model.pendingUpdate?.versionName}"
+                                else -> lastCheckedText(model.cloudState.lastCheckedAtEpochSeconds)
+                            },
+                            Icons.Filled.SystemUpdateAlt, stacked = true, enabled = !model.cloudState.isChecking,
+                        ) {
+                            awaitingCheck = true
+                            model.checkForUpdates(CloudRefreshTrigger.MANUAL)
+                        }
+                    },
+                ),
+            )
+        }
+        if (model.isTelemetryAvailable) {
+            GroupedSection(
+                "帮助改进",
+                footer = "每天最多上报一次：应用版本、系统版本、设备型号和一个随机生成的安装标识。" +
+                    "不含账号、宿舍号、电量或任何位置信息，也不读取设备识别码。关掉后本机标识一并删除，不影响任何功能。",
+                rows = listOf(
+                    {
+                        GroupedRow(
+                            "匿名使用统计",
+                            if (model.telemetryEnabled) "已开启" else "已关闭",
+                            Icons.Filled.Insights,
+                            stacked = true,
+                            trailing = {
+                                Switch(model.telemetryEnabled, { model.setTelemetryEnabled(it) })
+                            },
+                        )
+                    },
+                    { GroupedRow("看看会上报什么", "逐项列出，可复制", disclosure = true) { dialog = "telemetry" } },
+                ),
+            )
+        }
         GroupedSection(
             "调试",
             rows = listOf(
@@ -93,9 +159,46 @@ fun SettingsScreen(model: PowerViewModel, onOpen: (String) -> Unit, onLogin: () 
             rows = listOf(
                 { GroupedRow("关于湖科电量", "开发者的话 · 更新日志", Icons.Filled.Bolt, stacked = true) { onOpen("about") } },
                 { GroupedRow("更新日志", "版本 ${Changelog.latest.version}", Icons.AutoMirrored.Filled.List, stacked = true) { onOpen("changelog") } },
-                { GroupedRow("隐私政策", "不收集个人信息 · 无服务器", Icons.Filled.PrivacyTip, stacked = true) { onOpen("legal:PRIVACY") } },
+                { GroupedRow("隐私政策", "不上传电量数据 · 统计默认关闭", Icons.Filled.PrivacyTip, stacked = true) { onOpen("legal:PRIVACY") } },
                 { GroupedRow("用户服务协议", icon = Icons.Filled.Description, disclosure = true) { onOpen("legal:AGREEMENT") } },
             ),
+        )
+    }
+
+    if (dialog == "telemetry") {
+        AlertDialog(
+            onDismissRequest = { dialog = null },
+            title = { Text("会上报这些") },
+            text = {
+                Column {
+                    model.telemetryPreview().forEach { (label, value) ->
+                        Text("$label：$value", modifier = Modifier.padding(vertical = 3.dp))
+                    }
+                    Text(
+                        "发往 ${model.telemetryHost ?: "未配置"}。除此之外不上报任何内容。",
+                        color = colors.secondaryText,
+                        modifier = Modifier.padding(top = 10.dp),
+                    )
+                }
+            },
+            confirmButton = { TextButton({ dialog = null }) { Text("知道了") } },
+            dismissButton = {
+                TextButton({ model.resetTelemetryId(); dialog = null }) { Text("重置安装标识") }
+            },
+        )
+    }
+
+    model.pendingUpdate?.takeIf { updateDialog }?.let { update ->
+        UpdateDialog(
+            update = update,
+            required = model.mustUpgrade,
+            currentVersionName = BuildConfig.VERSION_NAME,
+            onSkip = { model.skipUpdate(); updateDialog = false },
+            onClose = { updateDialog = false },
+            onDownload = {
+                update.downloadUrl?.let { openDownload(context, it) }
+                updateDialog = false
+            },
         )
     }
 
@@ -128,4 +231,11 @@ private fun ThresholdDialog(current: Double, onDismiss: () -> Unit, onSave: (Dou
         confirmButton = { TextButton({ value?.let(onSave) }, enabled = value != null) { Text("保存") } },
         dismissButton = { TextButton(onDismiss) { Text("取消") } },
     )
+}
+
+/** "今天 14:30 检查过" reads better than a raw timestamp, and "从未检查" is the honest empty state. */
+private fun lastCheckedText(epochSeconds: Long): String {
+    if (epochSeconds <= 0) return "从未检查"
+    val formatted = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(epochSeconds * 1000))
+    return "上次检查 $formatted"
 }

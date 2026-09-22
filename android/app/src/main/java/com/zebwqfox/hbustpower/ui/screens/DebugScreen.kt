@@ -24,6 +24,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.zebwqfox.hbustpower.BuildConfig
+import com.zebwqfox.hbustpower.data.CloudRefreshTrigger
 import com.zebwqfox.hbustpower.data.Diagnostics
 import com.zebwqfox.hbustpower.data.SchoolEndpoints
 import com.zebwqfox.hbustpower.notification.PowerNotifications
@@ -121,6 +122,21 @@ fun DebugScreen(model: PowerViewModel, onBack: () -> Unit) {
                 DebugRow("低电量提醒状态", model.reminderDiagnostic),
                 DebugRow("数据条数", "设备 ${snapshot?.meters?.size ?: 0} · 用量 ${snapshot?.usageRecords?.size ?: 0} · 充值 ${snapshot?.rechargeRecords?.size ?: 0}"),
                 DebugRow("重新读取电量", if (model.status == PowerStatus.Loading) "正在刷新，请稍候" else "重新连接学校系统") { model.refresh() },
+            ),
+        ),
+        DebugSection(
+            "更新检查", "只读取作者站点上的一个静态文件，不发送任何内容；构建时未配置地址则整个功能不参与编译。", listOf(
+                DebugRow("配置地址", model.cloudConfigHost ?: "未配置（功能已关闭）"),
+                DebugRow("上次检查", model.cloudState.lastCheckedAtEpochSeconds.takeIf { it > 0 }
+                    ?.let { formatDateTime(java.time.Instant.ofEpochSecond(it)) } ?: "从未检查"),
+                DebugRow("发布时间", model.cloudState.config.publishedAt ?: "未知"),
+                DebugRow("最新版本", model.cloudState.config.update?.let { "${it.versionName} (${it.versionCode})" } ?: "未取得"),
+                DebugRow("当前公告", model.notice?.let { "${it.level} · ${it.title}" } ?: "无"),
+                DebugRow("功能开关", model.cloudState.config.flags.entries
+                    .joinToString(" · ") { "${it.key}=${onOff(it.value)}" }.ifEmpty { "全部默认开启" }),
+                DebugRow("立即检查", if (model.cloudState.isChecking) "正在检查，请稍候" else "忽略每日一次的限制") {
+                    model.checkForUpdates(CloudRefreshTrigger.MANUAL)
+                },
             ),
         ),
         DebugSection(

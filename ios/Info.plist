@@ -4,6 +4,14 @@
 <dict>
 	<key>SchoolAppKey</key>
 	<string>$(SCHOOL_APP_KEY)</string>
+	<key>CloudConfigURL</key>
+	<string>$(CLOUD_CONFIG_URL)</string>
+	<key>CloudDownloadHosts</key>
+	<string>$(CLOUD_DOWNLOAD_HOSTS)</string>
+	<key>TelemetryURL</key>
+	<string>$(TELEMETRY_URL)</string>
+	<key>PrivacyPolicyURL</key>
+	<string>$(PRIVACY_POLICY_URL)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>zh_CN</string>
 	<key>CFBundleDisplayName</key>

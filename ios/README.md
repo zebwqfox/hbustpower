@@ -12,6 +12,47 @@
 
 iOS 不允许普通 App 在后台长期定时轮询。应用会在启动、回到前台和用户手动刷新时查询数据。
 
+## 检查更新与公告
+
+应用读取一个放在自有站点上的静态 JSON，用来提示新版本、显示公告、在学校页面改版时临时关掉某个入口。
+**只读取、不上传**：普通 GET，不带 Cookie、参数或设备标识。没有任何形式的代码热更新——下发内容只有版本号、
+文字和布尔开关。
+
+地址配在 `Config/Base.xcconfig`（这些是会随 App 分发的公开值，和 `SCHOOL_APP_KEY` 不同，直接写在这里）：
+
+```
+CLOUD_CONFIG_URL      https://hbustelec.imfurry.com/app/config-ios.json
+CLOUD_DOWNLOAD_HOSTS  cdn-imfurry.imfurry.com
+TELEMETRY_URL         https://hbustelec.imfurry.com/api/v1/report
+PRIVACY_POLICY_URL    https://hbustelec.imfurry.com/privacy-policy.html
+```
+
+留空则整个功能不编译进去：不发请求，设置里也不显示对应入口。
+
+代码在 `Services/CloudConfig*.swift`：`CloudConfig` 只做解析与判断（纯值类型，可单测），
+`HTTPCloudConfigFetcher` 负责一次带 ETag、限 64 KB 的请求，`CloudConfigStore` 管缓存、每日一次的节流
+和「跳过这个版本」「关掉这条公告」的记录。
+
+**iOS 装不了从网页下载的 ipa。** 点「去下载」只是用 Safari 打开地址，用户仍需自己用 Sideloadly 侧载。
+面板在下载地址不是 `.ipa` 时会提醒。
+
+解析逻辑与 Android 的 `data/CloudConfig.kt` 是同一份契约，两边的单元测试逐条对应
+（`CloudConfigTests.swift` / `CloudConfigTest.kt`），改一边就要看另一边。
+
+## 匿名使用统计（默认开启，可在开始使用前关掉）
+
+`Services/Telemetry.swift`。每天最多一次，上报应用版本、系统版本、机型标识（`iPhone16,2`）、语言、渠道，
+和一个 App 自己 `UUID()` 出来的安装标识——**不读 IDFA / IDFV / 序列号**，不含账号、宿舍号、电量。
+
+默认是开的，但**开关就在首次引导最后一屏、「开始使用」按钮的正上方**，用户开始用之前就能关掉；关掉的话
+连安装标识都不会生成。此后在 设置 → 帮助改进 里也能随时关，关闭时本机标识一并删除。
+
+这个「默认开启但摆在明面上」的形态是刻意的：悄悄默认开启在备案口径上站不住，而藏在设置深处的开关拿不到
+有意义的样本。`FirstRunViewController` 上那个开关不要挪走。
+
+隐私政策第六条逐条写了这些承诺，`HBUSTPowerIOSTests/TelemetryTests.swift` 逐条测了它们。
+收数据的面板在另一个仓库（`hbustpower-admin`），不在这里。
+
 ## 远程推送
 
 客户端已接入 APNs：授权后注册设备令牌、通过 HTTPS 向服务端登记、前台展示通知，并按 payload 的 `destination` 跳转到对应标签页。完整的 Apple 配置、登记接口和推送 payload 约定见 [APNS-SETUP.md](APNS-SETUP.md)。

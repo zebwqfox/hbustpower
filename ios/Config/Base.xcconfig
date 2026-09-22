@@ -2,4 +2,14 @@
 // The placeholder keeps the project building without secrets; scripts/secrets.sh apply writes
 // Secrets.xcconfig next to this file, and the optional include below overrides the value.
 SCHOOL_APP_KEY = REPLACE_WITH_YOUR_SCHOOL_APP_KEY
+
+// Cloud config and anonymous usage reporting. These are public values that ship inside the app, so unlike the
+// app key they live here in the open. Leaving either empty compiles that feature out: no requests, no UI.
+// `//` inside a value would start a comment in xcconfig, so the scheme is spelled with ${SLASH}.
+SLASH = /
+CLOUD_CONFIG_URL = https:$(SLASH)$(SLASH)hbustelec.imfurry.com/app/config-ios.json
+CLOUD_DOWNLOAD_HOSTS = cdn-imfurry.imfurry.com
+TELEMETRY_URL = https:$(SLASH)$(SLASH)hbustelec.imfurry.com/api/v1/report
+PRIVACY_POLICY_URL = https:$(SLASH)$(SLASH)hbustelec.imfurry.com/privacy-policy.html
+
 #include? "Secrets.xcconfig"

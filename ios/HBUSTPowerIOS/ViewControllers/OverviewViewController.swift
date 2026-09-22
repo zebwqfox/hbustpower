@@ -3,6 +3,7 @@ import UIKit
 final class OverviewViewController: ModelViewController {
     private let scrollView = UIScrollView()
     private let contentStack = UIStackView()
+    private let noticeBanner = NoticeBannerView()
     private let dashboard = UIStackView()
     private let welcome = UIStackView()
     private let connection = UIStackView()
@@ -62,6 +63,8 @@ final class OverviewViewController: ModelViewController {
 
     override func modelDidChange() {
         guard isViewLoaded else { return }
+        // The published notice sits above everything, including the "please sign in" state.
+        noticeBanner.isHidden = !noticeBanner.apply(model.notice) { [weak self] in self?.model.dismissNotice() }
         let loading = model.status == .loading
         navigationItem.rightBarButtonItem?.isEnabled = !loading
         if !loading { (scrollView.refreshControl as? ChargeRefreshControl)?.finish(success: model.status == .ready) }
@@ -122,6 +125,9 @@ final class OverviewViewController: ModelViewController {
         dashboard.accessibilityIdentifier = "overview.dashboard"
         welcome.accessibilityIdentifier = "overview.login"
         connection.accessibilityIdentifier = "overview.connection"
+        noticeBanner.isHidden = true
+        contentStack.addArrangedSubview(noticeBanner)
+        contentStack.setCustomSpacing(18, after: noticeBanner)
         contentStack.addArrangedSubview(connection)
         contentStack.addArrangedSubview(welcome)
         contentStack.addArrangedSubview(dashboard)

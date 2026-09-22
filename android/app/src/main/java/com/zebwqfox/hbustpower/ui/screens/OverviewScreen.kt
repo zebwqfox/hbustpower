@@ -143,6 +143,7 @@ fun OverviewScreen(
             LargeTitleHeader("电量") {
                 RoundIconButton(Icons.Filled.Refresh, "刷新数据", model::refresh, enabled = status != PowerStatus.Loading)
             }
+            NoticeBanner(model.notice, model::dismissNotice)
             when {
                 snapshot != null -> Dashboard(model, snapshot, liquid, onOpenUsage, onOpenRecords, onLogin, onRecharge)
                 status == PowerStatus.AuthenticationRequired -> Welcome(onLogin)

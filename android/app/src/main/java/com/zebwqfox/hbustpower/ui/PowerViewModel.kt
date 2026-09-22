@@ -13,6 +13,11 @@ import androidx.lifecycle.viewModelScope
 import com.zebwqfox.hbustpower.BuildConfig
 import com.zebwqfox.hbustpower.auth.ElectricityRedirectValidator
 import com.zebwqfox.hbustpower.data.AppSettings
+import com.zebwqfox.hbustpower.data.CloudConfig
+import com.zebwqfox.hbustpower.data.CloudConfigRepository
+import com.zebwqfox.hbustpower.data.CloudConfigState
+import com.zebwqfox.hbustpower.data.CloudEndpoints
+import com.zebwqfox.hbustpower.data.CloudRefreshTrigger
 import com.zebwqfox.hbustpower.data.Diagnostics
 import com.zebwqfox.hbustpower.data.ElectricityException
 import com.zebwqfox.hbustpower.data.ElectricityService
@@ -20,6 +25,8 @@ import com.zebwqfox.hbustpower.data.KeychainAccounts
 import com.zebwqfox.hbustpower.data.KeystoreCredentialStore
 import com.zebwqfox.hbustpower.data.NetworkException
 import com.zebwqfox.hbustpower.data.SchoolEndpoints
+import com.zebwqfox.hbustpower.data.TelemetryEndpoint
+import com.zebwqfox.hbustpower.data.TelemetryRepository
 import com.zebwqfox.hbustpower.data.SessionHttpClient
 import com.zebwqfox.hbustpower.data.WebViewCookieBridge
 import com.zebwqfox.hbustpower.model.ElectricitySnapshot
@@ -35,8 +42,10 @@ import com.zebwqfox.hbustpower.notification.PrefsReminderStateStore
 import com.zebwqfox.hbustpower.web.WebScripts
 import com.zebwqfox.hbustpower.web.WebViewFactory
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 sealed interface PowerStatus {
@@ -58,6 +67,8 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
     val debugNotifications = DebugNotificationService(app)
     val scripts = WebScripts(app)
     val campusCard = CampusCardController(this, scripts)
+    private val cloud = CloudConfigRepository(settings.prefs, BuildConfig.VERSION_CODE)
+    private val telemetry = TelemetryRepository(settings.prefs)
 
     val firstRun = FirstRunFlow(object : FirstRunStore {
         override fun markCompleted() { settings.firstRunCompleted = true }
@@ -83,11 +94,45 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
     val reminderDiagnostic: String get() = reminder.diagnosticStatus
     val isLowBalance: Boolean get() = snapshot?.let { it.purchasedKWh < lowBalanceThreshold } ?: false
 
+    /** Version notice, announcement and feature switches, as last fetched. Empty until the first check. */
+    var cloudState by mutableStateOf(CloudConfigState()); private set
+    var pendingUpdate by mutableStateOf<CloudConfig.Update?>(null); private set
+    var notice by mutableStateOf<CloudConfig.Notice?>(null); private set
+
+    /** False in builds without a config address compiled in: the update entry then stays hidden. */
+    val isUpdateCheckAvailable: Boolean get() = cloud.isConfigured
+    val cloudConfigHost: String? get() = CloudEndpoints.configHost
+
+    /** True when this build is older than the oldest one the school pages still work with. */
+    val mustUpgrade: Boolean get() = cloudState.config.mustUpgrade(BuildConfig.VERSION_CODE)
+
+    /**
+     * Feature switches fail open, so an unreachable config never takes a feature away. Read from the snapshot
+     * state rather than from disk: screens call this while composing, and they have to redraw when it changes.
+     */
+    fun isFeatureEnabled(flag: String): Boolean = cloudState.config.isEnabled(flag)
+
+    /** Anonymous version/device reporting: on unless switched off, and hidden when not configured. */
+    var telemetryEnabled by mutableStateOf(true); private set
+    val isTelemetryAvailable: Boolean get() = telemetry.isConfigured
+    val telemetryHost: String? get() = TelemetryEndpoint.host
+    val telemetryLastSentAt: Long get() = telemetry.lastSentAt
+
+    /** Exactly what a report would contain, so the settings screen can show it instead of describing it. */
+    fun telemetryPreview(): List<Pair<String, String>> = telemetry.previewPayload().humanReadable()
+
     private var started = false
+    private var cloudJob: Job? = null
+    private var telemetryJob: Job? = null
     private var refreshJob: Job? = null
     private var refreshStartedAt = 0L
 
-    init { PowerNotifications.ensureChannels(app) }
+    init {
+        PowerNotifications.ensureChannels(app)
+        // The cached copy only; the first request waits for consent and for start().
+        publishCloud(cloud.state())
+        telemetryEnabled = telemetry.isEnabled
+    }
 
     fun acceptPrivacy() {
         settings.acceptedConsentVersion = LegalDocuments.CONSENT_VERSION
@@ -104,11 +149,84 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
         if (started || !firstRunCompleted || !privacyAccepted) return
         started = true
         refresh()
+        checkForUpdates(CloudRefreshTrigger.LAUNCH)
+        reportUsage()
     }
 
     /** Foreground return: iOS refreshes on `sceneWillEnterForeground`. */
     fun onForeground() {
-        if (started) refresh()
+        if (!started) return
+        refresh()
+        checkForUpdates(CloudRefreshTrigger.LAUNCH)
+        reportUsage()
+    }
+
+    /**
+     * Sends the anonymous version/device report, at most once a day and only when the user has switched it on.
+     * Failures are silent: this exists for the developer's benefit, never the user's, so it must not interrupt
+     * anything or be worth retrying aggressively.
+     */
+    fun reportUsage(force: Boolean = false) {
+        if (!privacyAccepted || !telemetry.shouldSend(force)) return
+        if (telemetryJob?.isActive == true) return
+        telemetryJob = viewModelScope.launch {
+            val sent = withContext(Dispatchers.IO) { telemetry.report(force) }
+            if (sent) Diagnostics.record("已发送匿名使用统计")
+        }
+    }
+
+    /** The consent screen's toggle and the settings switch both land here. */
+    fun setTelemetryEnabled(enabled: Boolean) {
+        telemetry.isEnabled = enabled
+        telemetryEnabled = telemetry.isEnabled
+        Diagnostics.record(if (enabled) "已开启匿名使用统计" else "已关闭匿名使用统计，并清除本机安装标识")
+        // Not from the consent screen: nothing may go out before the policy is accepted.
+        if (enabled && privacyAccepted) reportUsage(force = true)
+    }
+
+    /** Gives this install a new random identifier; the old one can no longer be linked to this device. */
+    fun resetTelemetryId() {
+        telemetry.resetInstallId()
+        Diagnostics.record("已重置匿名安装标识")
+    }
+
+    /**
+     * Reads the version/notice file from the developer's own site. A launch check is silent and happens at most
+     * once a day; a manual check always asks and reports what went wrong. Nothing is sent: it is a plain GET with
+     * no cookies and no parameters, and it never runs before the privacy policy is accepted.
+     */
+    fun checkForUpdates(trigger: CloudRefreshTrigger) {
+        if (!privacyAccepted || !cloud.isConfigured) return
+        if (cloudJob?.isActive == true) return
+        if (!cloud.shouldCheck(trigger)) {
+            if (trigger == CloudRefreshTrigger.MANUAL) publishCloud(cloud.state())
+            return
+        }
+        cloudState = cloudState.copy(isChecking = true, error = null)
+        cloudJob = viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) { cloud.refresh(trigger) }
+            publishCloud(result)
+            Diagnostics.record(
+                "检查更新：" + (result.error ?: cloud.pendingUpdate(result.config)?.let { "发现 ${it.versionName}" } ?: "已是最新"),
+            )
+        }
+    }
+
+    /** Stops offering this particular version; a later one, or a required upgrade, still shows. */
+    fun skipUpdate() {
+        pendingUpdate?.let { cloud.skip(it) }
+        pendingUpdate = cloud.pendingUpdate(cloudState.config)
+    }
+
+    fun dismissNotice() {
+        notice?.let { cloud.dismissNotice(it) }
+        notice = cloud.activeNotice(cloudState.config)
+    }
+
+    private fun publishCloud(state: CloudConfigState) {
+        cloudState = state.copy(isChecking = false)
+        pendingUpdate = cloud.pendingUpdate(state.config)
+        notice = cloud.activeNotice(state.config)
     }
 
     fun refresh() {

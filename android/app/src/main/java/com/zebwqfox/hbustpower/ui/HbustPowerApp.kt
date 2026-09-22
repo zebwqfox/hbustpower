@@ -60,6 +60,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -81,6 +82,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.activity.compose.LocalActivity
 import com.zebwqfox.hbustpower.model.FirstRunFlow
 import com.zebwqfox.hbustpower.model.LegalDocuments
+import android.widget.Toast
+import com.zebwqfox.hbustpower.BuildConfig
+import com.zebwqfox.hbustpower.data.CloudConfig
 import com.zebwqfox.hbustpower.model.MeterKind
 import com.zebwqfox.hbustpower.notification.PowerNotifications
 import com.zebwqfox.hbustpower.ui.components.PowerButton
@@ -99,6 +103,8 @@ import com.zebwqfox.hbustpower.ui.screens.RecordDetailScreen
 import com.zebwqfox.hbustpower.ui.screens.RecordsScreen
 import com.zebwqfox.hbustpower.ui.screens.SettingsScreen
 import com.zebwqfox.hbustpower.ui.screens.ThemePickerScreen
+import com.zebwqfox.hbustpower.ui.screens.UpdateDialog
+import com.zebwqfox.hbustpower.ui.screens.openDownload
 import com.zebwqfox.hbustpower.ui.screens.UsageScreen
 import com.zebwqfox.hbustpower.ui.theme.Power
 
@@ -155,6 +161,9 @@ private fun ConsentGate(model: PowerViewModel) {
             onAgree = model::acceptPrivacy,
             onDecline = { activity?.finishAndRemoveTask() },
             onOpenDocument = { reading = it.name },
+            telemetryAvailable = model.isTelemetryAvailable,
+            telemetryEnabled = model.telemetryEnabled,
+            onTelemetryChanged = model::setTelemetryEnabled,
         )
     }
 }
@@ -226,6 +235,7 @@ private fun FirstRunScreen(model: PowerViewModel) {
 @Composable
 private fun MainShell(model: PowerViewModel) {
     val colors = Power.colors
+    val context = LocalContext.current
     val haptics = rememberHaptics()
     val layout = LocalPowerLayout.current
     var selected by rememberSaveable { mutableIntStateOf(0) }
@@ -244,6 +254,11 @@ private fun MainShell(model: PowerViewModel) {
         select(MainTab.USAGE.ordinal)
     }
     fun openRecharge() {
+        // Switched off from the published config when the school's recharge page breaks; otherwise always on.
+        if (!model.isFeatureEnabled(CloudConfig.FLAG_RECHARGE)) {
+            Toast.makeText(context, "学校充值页面暂时不可用，请到智慧湖科充值。", Toast.LENGTH_SHORT).show()
+            return
+        }
         // A refresh can temporarily move a valid session out of Ready. The recharge page uses the
         // shared WebView cookies directly, so do not turn a tap into a silent no-op during that window.
         overlay = "recharge"
@@ -316,6 +331,22 @@ private fun MainShell(model: PowerViewModel) {
                     }
                 }
             }
+        }
+
+        // Offered once per launch, wherever the user happens to be; closing it waits for the next launch.
+        var updateDialogClosed by remember { mutableStateOf(false) }
+        model.pendingUpdate?.takeIf { !updateDialogClosed }?.let { update ->
+            UpdateDialog(
+                update = update,
+                required = model.mustUpgrade,
+                currentVersionName = BuildConfig.VERSION_NAME,
+                onSkip = { model.skipUpdate(); updateDialogClosed = true },
+                onClose = { updateDialogClosed = true },
+                onDownload = {
+                    update.downloadUrl?.let { openDownload(context, it) }
+                    updateDialogClosed = true
+                },
+            )
         }
 
         AnimatedVisibility(

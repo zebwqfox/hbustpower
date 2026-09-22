@@ -14,6 +14,13 @@ final class AppModel {
     private let defaults: UserDefaults
     private let service = ElectricityService()
     private let lowBalanceReminder: LowBalanceReminder
+    private let cloud: CloudConfigStore
+    private let telemetry: TelemetryStore
+    /// Nothing reaches the network before `start()`: the first-run screen runs ahead of it and its toggle
+    /// must be answerable without anything having been sent yet.
+    private var hasStarted = false
+    private var cloudTask: Task<Void, Never>?
+    private var telemetryTask: Task<Void, Never>?
     private var reminderTask: Task<Void, Never>?
     private var refreshTask: Task<Void, Never>?
     private var refreshStartedAt: Date?
@@ -23,9 +30,120 @@ final class AppModel {
     var reminderDiagnostic: String { lowBalanceReminder.diagnosticStatus }
 
 
-    init(defaults: UserDefaults = .standard, reminder: LowBalanceReminder? = nil) {
+    init(
+        defaults: UserDefaults = .standard,
+        reminder: LowBalanceReminder? = nil,
+        cloud: CloudConfigStore? = nil,
+        telemetry: TelemetryStore? = nil
+    ) {
         self.defaults = defaults
         self.lowBalanceReminder = reminder ?? LowBalanceReminder(defaults: defaults)
+        self.cloud = cloud ?? CloudConfigStore(defaults: defaults)
+        self.telemetry = telemetry ?? TelemetryStore(defaults: defaults)
+        // The cached copy only; the first request waits for start().
+        publishCloud(self.cloud.state())
+        telemetryEnabled = self.telemetry.isEnabled
+    }
+
+    // MARK: - Cloud config
+
+    /// Version notice, announcement and feature switches, as last fetched. Empty until the first check.
+    private(set) var cloudState = CloudConfigState()
+    private(set) var pendingUpdate: CloudConfig.Update?
+    private(set) var notice: CloudConfig.Notice?
+
+    /// False in builds without a config address compiled in: the update entry then stays hidden.
+    var isUpdateCheckAvailable: Bool { cloud.isConfigured }
+    var cloudConfigHost: String? { CloudEndpoints.configHost }
+
+    /// True when this build is older than the oldest one the school pages still work with.
+    var mustUpgrade: Bool { cloudState.config.mustUpgrade(currentVersionCode: Bundle.main.versionCode) }
+
+    /// Feature switches fail open, so an unreachable config never takes a feature away.
+    func isFeatureEnabled(_ flag: String) -> Bool { cloudState.config.isEnabled(flag) }
+
+    /// Reads the version/notice file from the developer's own site. A launch check is silent and happens at
+    /// most once a day; a manual check always asks and reports what went wrong. Nothing is sent: it is a plain
+    /// GET with no cookies and no parameters.
+    func checkForUpdates(_ trigger: CloudRefreshTrigger) {
+        guard hasStarted, cloud.isConfigured, cloudTask == nil else { return }
+        guard cloud.shouldCheck(trigger) else {
+            if trigger == .manual { publishCloud(cloud.state()) }
+            return
+        }
+        cloudState.isChecking = true
+        cloudState.error = nil
+        notifyChange()
+        cloudTask = Task { [weak self] in
+            guard let self else { return }
+            let result = await self.cloud.refresh(trigger)
+            self.cloudTask = nil
+            self.publishCloud(result)
+            let summary = result.error
+                ?? self.cloud.pendingUpdate(result.config).map { "发现 " + $0.versionName }
+                ?? "已是最新"
+            PowerDiagnostics.shared.record("检查更新：" + summary)
+        }
+    }
+
+    /// Stops offering this particular version; a later one, or a required upgrade, still shows.
+    func skipUpdate() {
+        if let pendingUpdate { cloud.skip(pendingUpdate) }
+        pendingUpdate = cloud.pendingUpdate(cloudState.config)
+        notifyChange()
+    }
+
+    func dismissNotice() {
+        if let notice { cloud.dismiss(notice) }
+        notice = cloud.activeNotice(cloudState.config)
+        notifyChange()
+    }
+
+    private func publishCloud(_ state: CloudConfigState) {
+        cloudState = state
+        cloudState.isChecking = false
+        pendingUpdate = cloud.pendingUpdate(state.config)
+        notice = cloud.activeNotice(state.config)
+        notifyChange()
+    }
+
+    // MARK: - Anonymous usage reporting
+
+    /// On unless switched off, and hidden entirely when not configured.
+    private(set) var telemetryEnabled = true
+    var isTelemetryAvailable: Bool { telemetry.isConfigured }
+    var telemetryHost: String? { TelemetryEndpoint.host }
+    var telemetryLastSentAt: TimeInterval { telemetry.lastSentAt }
+
+    /// Exactly what a report would contain, so settings can show it instead of describing it.
+    func telemetryPreview() -> [(String, String)] { telemetry.previewPayload().humanReadable() }
+
+    /// Sends the anonymous version/device report, at most once a day and only when switched on. Failures are
+    /// silent: this exists for the developer's benefit, never the user's.
+    func reportUsage(force: Bool = false) {
+        guard hasStarted, telemetry.shouldSend(force: force), telemetryTask == nil else { return }
+        telemetryTask = Task { [weak self] in
+            guard let self else { return }
+            let sent = await self.telemetry.report(force: force)
+            self.telemetryTask = nil
+            if sent { PowerDiagnostics.shared.record("已发送匿名使用统计") }
+        }
+    }
+
+    /// The first-run toggle and the settings switch both land here.
+    func setTelemetryEnabled(_ enabled: Bool) {
+        telemetry.isEnabled = enabled
+        telemetryEnabled = telemetry.isEnabled
+        PowerDiagnostics.shared.record(enabled ? "已开启匿名使用统计" : "已关闭匿名使用统计，并清除本机安装标识")
+        if enabled { reportUsage(force: true) }
+        notifyChange()
+    }
+
+    /// Gives this install a new random identifier; the old one can no longer be linked to this device.
+    func resetTelemetryID() {
+        telemetry.resetInstallID()
+        PowerDiagnostics.shared.record("已重置匿名安装标识")
+        notifyChange()
     }
 
     private(set) var snapshot: ElectricitySnapshot?
@@ -56,7 +174,10 @@ final class AppModel {
             return
         }
 #endif
+        hasStarted = true
         refresh()
+        checkForUpdates(.launch)
+        reportUsage()
     }
 
     func refresh() {

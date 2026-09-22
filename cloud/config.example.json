@@ -1,0 +1,28 @@
+{
+  "publishedAt": "2026-09-22",
+  "minSupportedVersionCode": 0,
+  "update": {
+    "versionCode": 193,
+    "versionName": "1.9.3",
+    "sizeBytes": 9437184,
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "downloadUrl": "https://cdn-imfurry.imfurry.com/update-release/HBUSTPower-Android-1.9.3-release.apk",
+    "notes": [
+      "修复学校页面改版后读不到空调用量的问题",
+      "设置里新增检查更新"
+    ]
+  },
+  "notice": {
+    "id": "2026-09-22-maintenance",
+    "title": "学校系统维护",
+    "body": "电费系统本周六 0:00–6:00 维护，期间查询会失败，维护结束后自动恢复。",
+    "level": "info",
+    "expiresAt": 1790000000,
+    "dismissible": true
+  },
+  "flags": {
+    "campusCard": true,
+    "recharge": true,
+    "updateCheck": true
+  }
+}

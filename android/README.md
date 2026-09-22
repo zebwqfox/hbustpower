@@ -1,4 +1,4 @@
-# 湖科电量 Android 1.9.2
+# 湖科电量 Android 1.9.3
 
 包名 `com.zebwqfox.hbustpower`。原生 Kotlin + Jetpack Compose，基于仓库内 iOS 客户端的功能开发。五个标签：电量、用量、充值记录、校园卡、设置；另有关于、更新日志、调试与诊断、记录详情、学习通登录和官方充值页。
 
@@ -32,6 +32,46 @@ $env:JAVA_TOOL_OPTIONS="-Djdk.net.unixdomain.tmpdir=C:\hbtmp -Djava.io.tmpdir=C:
 
 应用使用学校指定的学习通授权入口（`data/SchoolEndpoints.kt`），用户无需配置。
 
+## 检查更新与公告
+
+应用读取一个放在自有站点上的静态 JSON，用来提示新版本、显示公告、在学校页面改版时临时关掉某个入口。
+**只读取、不上传**：普通 GET，不带 Cookie、参数或设备标识；发现新版本也只是弹提示，安装包由用户在浏览器里自行下载。
+没有任何形式的代码热更新——下发内容只有版本号、文字和布尔开关。
+
+```properties
+# android/gradle.properties
+cloudConfigUrl=https://hbustelec.imfurry.com/app/config.json
+cloudDownloadHosts=cdn-imfurry.imfurry.com
+```
+
+`cloudConfigUrl` 留空时整个功能不编译进去：不发请求，设置里也不显示“检查更新”。
+文件格式与托管说明见 `cloud/README.md`，示例见 `cloud/config.example.json`。
+`cloudDownloadHosts` 之外的下载地址会被直接丢弃，即使 JSON 被篡改也没法把用户引到陌生页面。
+
+代码在 `data/CloudConfig*.kt`：`CloudConfig` 只做解析与判断（纯 Kotlin，可单测），
+`HttpCloudConfigFetcher` 负责一次带 ETag、限 64 KB 的请求，`CloudConfigRepository` 管缓存、每日一次的节流
+和“跳过这个版本”“关掉这条公告”的记录。
+
+## 匿名使用统计（默认开启，可在同意隐私政策前关掉）
+
+`data/Telemetry.kt`。每天最多一次，上报应用版本、系统版本、机型、ABI、语言、渠道，和一个
+App 自己 `UUID.randomUUID()` 出来的安装标识——不读 IMEI / OAID / Android ID，不含账号、宿舍号、电量。
+
+默认是开的，但**开关就在隐私同意页上、「同意并继续」按钮的正上方**，用户在同意之前就能关掉；关掉的话
+连安装标识都不会生成。此后在 设置 → 帮助改进 里也能随时关，关闭时本机标识一并删除。
+
+这个「默认开启但摆在明面上」的形态是刻意的：悄悄默认开启在备案口径上站不住，
+而藏在设置深处的开关拿不到有意义的样本。`PrivacyConsentScreen` 的那个开关不要挪走。
+
+```properties
+telemetryUrl=https://hbustelec.imfurry.com/api/v1/report
+```
+
+留空则整个功能不编译进去，设置里也不出现这一项。
+
+隐私政策第六条逐条写了这些承诺，`app/src/test/.../TelemetryTest.kt` 逐条测了它们。**改这里之前先看那些测试。**
+收数据的面板在另一个仓库（`hbustpower-admin`），不在这里。
+
 ## 实现要点
 
 | 模块 | 位置 |
@@ -55,7 +95,7 @@ $env:JAVA_TOOL_OPTIONS="-Djdk.net.unixdomain.tmpdir=C:\hbtmp -Djava.io.tmpdir=C:
 
 ## 测试
 
-45 项 JVM 单元测试：解析器与 iOS 生成的预期结果、redirect 校验、服务层失效判断、学校地址规则、估算与小发现、低电量去重、首次引导状态机、更新日志（最新版本号 = versionName、从新到旧、分组非空）、头像彩蛋、水位倾斜方向、下拉充电文案、图表刻度与三段用量切换、贴纸阈值、手绘线确定性、下拉充电各阶段文案与圆环、充值计算器（与 iOS 单测逐例对照）、充值汇总跳过缺失字段、主题唯一性与持久化、《飞鸟集》循环。
+79 项 JVM 单元测试：解析器与 iOS 生成的预期结果、redirect 校验、服务层失效判断、学校地址规则、估算与小发现、低电量去重、首次引导状态机、更新日志（最新版本号 = versionName、从新到旧、分组非空）、头像彩蛋、水位倾斜方向、下拉充电文案、图表刻度与三段用量切换、贴纸阈值、手绘线确定性、下拉充电各阶段文案与圆环、充值计算器（与 iOS 单测逐例对照）、充值汇总跳过缺失字段、主题唯一性与持久化、《飞鸟集》循环、云端配置解析（畸形输入不抛异常、未知字段忽略、下载地址域名校验、公告过期与关闭、开关缺省为开）与仓储（每日节流、ETag 往返、失败不覆盖已有缓存、跳过版本、强制升级）、匿名统计（默认开启、关闭后彻底停发且不生成标识、关闭即删除标识、每日节流、字段白名单）。
 
 ## 已在模拟器（Android 16，1080×2400）验证
 
@@ -73,6 +113,7 @@ $env:JAVA_TOOL_OPTIONS="-Djdk.net.unixdomain.tmpdir=C:\hbtmp -Djava.io.tmpdir=C:
 - WebView 在 Android 9+ 上对学校 http 域名的明文访问（`network_security_config.xml` 只放行两个学校域名）
 - 真机厂商的通知与后台限制（模拟器上即时/延迟/低电量提醒均已送达）
 - 手机左右倾斜时水位方向、折叠屏半折叠时的折痕避让、TalkBack 朗读
+- 检查更新与匿名统计的真实链路：本机没有 Android SDK，`data/CloudConfig*.kt`、`data/Telemetry.kt` 及相关界面改动**尚未编译验证**，需在 Windows 上先跑 `.\gradlew.bat testDebugUnitTest assembleDebug`
 
 ## 与早期 Android 版本的差异
 

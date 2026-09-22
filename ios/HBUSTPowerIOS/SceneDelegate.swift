@@ -38,13 +38,22 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 #else
             flow = FirstRunFlow()
 #endif
-            window.rootViewController = FirstRunViewController(flow: flow) { [weak self, weak window] in
+            let firstRun = FirstRunViewController(flow: flow) { [weak self, weak window] in
                 guard let self, let window, !self.hasStarted else { return }
                 UIView.transition(with: window, duration: UIAccessibility.isReduceMotionEnabled ? 0.15 : 0.3, options: .transitionCrossDissolve) {
                     window.rootViewController = root
                 }
                 self.finishStartup(root: root)
             }
+            // The usage-reporting toggle belongs on this screen: it has to be answerable before the app has
+            // sent anything, and this is the only screen that runs before `model.start()`.
+            if model.isTelemetryAvailable {
+                firstRun.telemetry = (
+                    isEnabled: { [weak model] in model?.telemetryEnabled ?? true },
+                    setEnabled: { [weak model] isOn in model?.setTelemetryEnabled(isOn) }
+                )
+            }
+            window.rootViewController = firstRun
             window.makeKeyAndVisible()
         } else {
             window.rootViewController = root
@@ -151,5 +160,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func sceneWillEnterForeground(_ scene: UIScene) {
         guard hasStarted else { return }
         model.refresh()
+        model.checkForUpdates(.launch)
+        model.reportUsage()
     }
 }

@@ -3,6 +3,10 @@ import UIKit
 final class FirstRunViewController: UIViewController {
     private let flow: FirstRunFlow
     private let completion: () -> Void
+    /// Set when the app has usage reporting configured; the toggle then appears on the last page.
+    var telemetry: (isEnabled: () -> Bool, setEnabled: (Bool) -> Void)?
+    private let telemetryCard = UIView()
+    private let telemetrySwitch = UISwitch()
     private let stack = UIStackView()
     private let symbol = UIImageView()
     private let heading = UILabel.powerLabel(nil, style: .largeTitle, weight: .semibold)
@@ -44,8 +48,10 @@ final class FirstRunViewController: UIViewController {
         backButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
         pages.numberOfPages = 2; pages.isUserInteractionEnabled = false
         pages.currentPageIndicatorTintColor = PowerTheme.accent; pages.pageIndicatorTintColor = .systemGray4
-        [symbol, heading, detail, primary, secondary, backButton, pages].forEach(stack.addArrangedSubview)
+        configureTelemetryCard()
+        [symbol, heading, detail, telemetryCard, primary, secondary, backButton, pages].forEach(stack.addArrangedSubview)
         stack.setCustomSpacing(44, after: detail)
+        stack.setCustomSpacing(28, after: telemetryCard)
         primary.addAction(UIAction { [weak self] _ in self?.advance() }, for: .touchUpInside)
         secondary.addAction(UIAction { [weak self] _ in self?.flow.continueWithoutPermission(); self?.render(animated: true) }, for: .touchUpInside)
         backButton.addAction(UIAction { [weak self] _ in self?.flow.back(); self?.render(animated: true) }, for: .touchUpInside)
@@ -58,6 +64,46 @@ final class FirstRunViewController: UIViewController {
         }
         render(animated: false)
     }
+    /// Usage reporting starts switched on, but it is switched on *here*, in front of the person, above the
+    /// button they are about to press — not silently behind their back. Turning it off before continuing means
+    /// no identifier is ever generated and nothing is ever sent.
+    private func configureTelemetryCard() {
+        telemetryCard.backgroundColor = .secondarySystemBackground
+        telemetryCard.layer.cornerRadius = 16
+        telemetryCard.layer.cornerCurve = .continuous
+        telemetryCard.isHidden = true
+
+        let title = UILabel.powerLabel("帮助改进", style: .subheadline, weight: .medium)
+        let body = UILabel.powerLabel(
+            "每天最多上报一次应用版本、系统版本和设备型号，用来判断旧版本还有多少人在用。"
+                + "不含账号、宿舍号和电量，也不读取设备识别码。关掉不影响任何功能，之后在设置里也能改。",
+            style: .caption1, color: .secondaryLabel
+        )
+        body.numberOfLines = 0
+        telemetrySwitch.onTintColor = PowerTheme.accent
+        telemetrySwitch.setContentHuggingPriority(.required, for: .horizontal)
+        telemetrySwitch.addAction(UIAction { [weak self] _ in
+            guard let self else { return }
+            self.telemetry?.setEnabled(self.telemetrySwitch.isOn)
+        }, for: .valueChanged)
+
+        let text = UIStackView(arrangedSubviews: [title, body])
+        text.axis = .vertical
+        text.spacing = 4
+        let row = UIStackView(arrangedSubviews: [text, telemetrySwitch])
+        row.axis = .horizontal
+        row.alignment = .center
+        row.spacing = 14
+        row.translatesAutoresizingMaskIntoConstraints = false
+        telemetryCard.addSubview(row)
+        NSLayoutConstraint.activate([
+            row.leadingAnchor.constraint(equalTo: telemetryCard.leadingAnchor, constant: 16),
+            row.trailingAnchor.constraint(equalTo: telemetryCard.trailingAnchor, constant: -16),
+            row.topAnchor.constraint(equalTo: telemetryCard.topAnchor, constant: 14),
+            row.bottomAnchor.constraint(equalTo: telemetryCard.bottomAnchor, constant: -14)
+        ])
+    }
+
     private func advance() {
         guard !flow.busy else { return }
         switch flow.step {
@@ -85,6 +131,9 @@ final class FirstRunViewController: UIViewController {
         let intro = flow.step == .introduction
         pages.currentPage = intro ? 1 : 0
         backButton.isHidden = !intro; secondary.isHidden = intro
+        // Only on the last page, where the next tap starts the app for real.
+        telemetryCard.isHidden = !(intro && telemetry != nil)
+        if let telemetry { telemetrySwitch.isOn = telemetry.isEnabled() }
         symbol.image = UIImage(systemName: intro ? "bolt" : "bell.badge")
         switch flow.step {
         case .permission:

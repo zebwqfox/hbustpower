@@ -39,6 +39,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.zebwqfox.hbustpower.data.CloudConfig
 import com.zebwqfox.hbustpower.ui.LargeTitleHeader
 import com.zebwqfox.hbustpower.ui.PageColumn
 import com.zebwqfox.hbustpower.ui.PowerStatus
@@ -55,6 +56,15 @@ fun CampusScreen(model: PowerViewModel, onConnect: () -> Unit) {
     val card = model.campusCard
     val context = LocalContext.current
     val owner = LocalLifecycleOwner.current
+
+    // Switched off from the published config, normally right after the card portal changes and the read breaks.
+    if (!model.isFeatureEnabled(CloudConfig.FLAG_CAMPUS_CARD)) {
+        PageColumn(spacing = 24.dp) {
+            LargeTitleHeader("校园卡")
+            FeatureUnavailable("校园卡暂时不可用", "一卡通门户改版后这里读不到余额，修好会随新版本恢复。电量查询不受影响。")
+        }
+        return
+    }
 
     // Entering the tab reads; leaving cancels so stale results never overwrite newer ones.
     DisposableEffect(card) {

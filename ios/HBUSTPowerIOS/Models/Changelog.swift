@@ -18,7 +18,7 @@ enum Changelog {
 
     static let releases: [Release] = [
         Release(
-            version: "1.10.2",
+            version: "1.10.3",
             title: "会告诉你有新版本",
             summary: "学校系统改版或应用出问题时，不用再靠群里通知。",
             sections: [
@@ -33,6 +33,9 @@ enum Changelog {
                     "不含账号、宿舍号、电量、位置，也不读取 IDFA / IDFV 等设备识别码；服务端不记录来源 IP",
                     "开关摆在首次引导的最后一屏、“开始使用”按钮的正上方，开始之前就能关掉；设置 → 帮助改进 里也能随时改",
                     "“看看会上报什么”里逐项列出真实取值；关闭时本机标识一并删除，也可以随时重置",
+                ]),
+                Section(title: "修复", items: [
+                    "功能开关之前在 iOS 上不起作用：作者关掉校园卡入口后，iOS 版依旧照常显示（Android 版本来就是对的）",
                 ]),
                 Section(title: "说明", items: [
                     "更新与公告来自作者站点上的一个静态文件，只读取、不上传",

@@ -72,7 +72,10 @@ final class OverviewViewController: ModelViewController {
         welcome.isHidden = model.snapshot != nil || model.status != .authenticationRequired
         connection.isHidden = model.snapshot != nil || model.status == .authenticationRequired
         sessionButton.isHidden = model.status != .authenticationRequired
-        rechargeButton.isEnabled = model.status == .ready
+        // Switched off from the published config when the school's recharge page breaks; otherwise always on.
+        let rechargeEnabled = model.isFeatureEnabled(CloudConfig.flagRecharge)
+        rechargeButton.isHidden = !rechargeEnabled
+        rechargeButton.isEnabled = rechargeEnabled && model.status == .ready
         planButton.isEnabled = model.snapshot != nil
 
         guard let snapshot = model.snapshot else {

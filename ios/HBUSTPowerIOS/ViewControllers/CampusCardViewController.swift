@@ -12,6 +12,12 @@ final class CampusCardViewController: UIViewController, WKNavigationDelegate {
     private let note = UILabel.powerLabel(nil, style: .footnote, color: .secondaryLabel)
     private let login = PowerTheme.button("连接校园卡", image: "person.crop.circle")
     private let spinner = UIActivityIndicatorView(style: .medium)
+    /// Everything that makes up the working screen, hidden as one when the feature is switched off.
+    private var liveViews: [UIView] = []
+    private let unavailable = FeatureUnavailableView(
+        title: "校园卡暂时不可用",
+        detail: "一卡通门户改版后这里读不到余额，修好会随新版本恢复。电量查询不受影响。"
+    )
     private var task: Task<Void, Never>?
     private var generation = 0
     private var watchdog: Task<Void, Never>?
@@ -64,6 +70,9 @@ final class CampusCardViewController: UIViewController, WKNavigationDelegate {
             }
         }, for: .touchUpInside)
         stack.addArrangedSubview(recharge)
+        stack.addArrangedSubview(unavailable)
+        liveViews = [card, login, recharge]
+        applyAvailability()
         webView.navigationDelegate = self
         webView.customUserAgent = AuthenticationScripts.mobileUserAgent
         webView.isHidden = true
@@ -78,11 +87,28 @@ final class CampusCardViewController: UIViewController, WKNavigationDelegate {
         foreground = NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self, self.viewIfLoaded?.window != nil, self.presentedViewController == nil else { return }
+                // A foreground return is also when a new config arrives.
+                self.applyAvailability()
                 self.refresh()
             }
         }
     }
-    override func viewWillAppear(_ animated: Bool) { super.viewWillAppear(animated); refresh() }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // The config can change between visits, so re-check rather than trusting what viewDidLoad saw.
+        applyAvailability()
+        refresh()
+    }
+
+    /// Switched off from the published config; the read is skipped entirely rather than left to fail.
+    private var isAvailable: Bool { model.isFeatureEnabled(CloudConfig.flagCampusCard) }
+
+    private func applyAvailability() {
+        let available = isAvailable
+        liveViews.forEach { $0.isHidden = !available }
+        unavailable.isHidden = available
+        navigationItem.rightBarButtonItem?.isEnabled = available
+    }
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         generation += 1; task?.cancel(); watchdog?.cancel(); webView.stopLoading(); spinner.stopAnimating()
@@ -113,6 +139,7 @@ final class CampusCardViewController: UIViewController, WKNavigationDelegate {
     var portalForVerification: WKWebView { webView }
 #endif
     private func refresh(reusePage: Bool = false) {
+        guard isAvailable else { return }
         generation += 1; task?.cancel(); watchdog?.cancel()
 #if DEBUG
         if CommandLine.arguments.contains("--ui-preview") {

@@ -1,0 +1,5 @@
+// Shared build settings for the app target.
+// The placeholder keeps the project building without secrets; scripts/secrets.sh apply writes
+// Secrets.xcconfig next to this file, and the optional include below overrides the value.
+SCHOOL_APP_KEY = REPLACE_WITH_YOUR_SCHOOL_APP_KEY
+#include? "Secrets.xcconfig"

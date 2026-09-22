@@ -13,3 +13,9 @@ xcuserdata/
 android/build/
 android/.gradle/
 android/local.properties
+
+# Secrets: plaintext and generated config stay local, only secrets.env.enc is committed
+secrets/secrets.env
+ios/Config/Secrets.xcconfig
+android/secrets.properties
+android/keystore.properties

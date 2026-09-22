@@ -7,6 +7,14 @@ val keystoreProperties = Properties().apply {
     if (file.exists()) file.inputStream().use { load(it) }
 }
 
+// The school app key stays out of version control. scripts/secrets.sh apply writes secrets.properties;
+// without it the build still works and the app reports that it is not configured.
+val secretProperties = Properties().apply {
+    val file = rootProject.file("secrets.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+val schoolAppKey: String = secretProperties.getProperty("schoolAppKey") ?: ""
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -21,6 +29,7 @@ android {
     }
 
     defaultConfig {
+        buildConfigField("String", "SCHOOL_APP_KEY", "\"$schoolAppKey\"")
         applicationId = "com.zebwqfox.hbustpower"
         if (providers.gradleProperty("isolatedVerification").isPresent) applicationIdSuffix = ".verification"
         minSdk = 23

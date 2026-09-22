@@ -132,15 +132,27 @@ cd android
 
 调试安装包生成在 `android/app/build/outputs/apk/debug/app-debug.apk`，更多说明见 [Android 开发文档](android/README.md)。
 
+### 两台设备之间的密钥
+
+学校的 app key 不进仓库。明文放在本地的 `secrets/secrets.env`（已忽略），加密后的 `secrets/secrets.env.enc` 提交到仓库，
+所以 `git pull` 就能在 Mac 和 Windows 之间同步。只有口令在 git 之外，记在密码管理器里即可。
+
+```sh
+./scripts/secrets.sh unlock   # secrets.env.enc -> secrets.env（会问口令）
+./scripts/secrets.sh apply    # 生成 ios/Config/Secrets.xcconfig 和 android/secrets.properties
+./scripts/secrets.sh lock     # secrets.env -> secrets.env.enc，然后提交
+```
+
+Windows 上用 `scripts\secrets.ps1`，命令相同。两个脚本只依赖 `openssl`，macOS 自带，Windows 装了 Git 也自带。
+
+没有密钥文件时两端也能正常编译：iOS 回落到 `ios/Config/Base.xcconfig` 里的占位符，安卓回落到空的
+`BuildConfig.SCHOOL_APP_KEY`，应用会提示未配置，而不是出现莫名其妙的失败。
+
 ### 配置学校入口
 
-`ios/HBUSTPowerIOS/Services/ElectricityService.swift` 里是一卡通服务的 OAuth 入口地址，其中 `appKey` 在本仓库已脱敏：
-
-```
-appKey%3DREPLACE_WITH_YOUR_SCHOOL_APP_KEY
-```
-
-编译前需要从学校官方入口取得当前值。其余参数（`fidEnc`、`mappId`、`wfwEnc`）是本校的配置，换学校不通用。
+把 `secrets/secrets.env.example` 复制成 `secrets/secrets.env`，填入学校当前的 `appKey`，然后执行
+`./scripts/secrets.sh apply`。这个值从学校官方入口取得。其余参数（`fidEnc`、`mappId`、`wfwEnc`）写在源码里，
+是本校的配置，换学校不通用。
 
 ### 打未签名 IPA
 

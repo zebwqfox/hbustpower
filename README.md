@@ -144,17 +144,31 @@ cd android
 
 The debug APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`. See the [Android development guide](android/README.md) for details.
 
+### Secrets on two machines
+
+The school app key is not in the repository. `secrets/secrets.env` holds it locally and is git-ignored; the
+encrypted `secrets/secrets.env.enc` is committed, so a `git pull` carries it between the Mac and the Windows
+machine. Only the passphrase lives outside git — keep it in your password manager.
+
+```sh
+./scripts/secrets.sh unlock   # secrets.env.enc -> secrets.env (asks for the passphrase)
+./scripts/secrets.sh apply    # writes ios/Config/Secrets.xcconfig and android/secrets.properties
+./scripts/secrets.sh lock     # secrets.env -> secrets.env.enc, commit the result
+```
+
+On Windows use `scripts\secrets.ps1` with the same commands. Both scripts only need `openssl`, which ships with
+macOS and with Git for Windows.
+
+Without the secrets file both projects still build: iOS falls back to the placeholder in `ios/Config/Base.xcconfig`
+and Android to an empty `BuildConfig.SCHOOL_APP_KEY`, and the app reports that it is not configured instead of
+failing in a confusing way.
+
 ### Configure the school entry point
 
-`ios/HBUSTPowerIOS/Services/ElectricityService.swift` holds the OAuth entry URL for the campus card service. The
-`appKey` is redacted here:
-
-```
-appKey%3DREPLACE_WITH_YOUR_SCHOOL_APP_KEY
-```
-
-Get the current value from the official campus portal before building. The other parameters (`fidEnc`, `mappId`,
-`wfwEnc`) are this school's configuration and will not work elsewhere.
+Copy `secrets/secrets.env.example` to `secrets/secrets.env`, put the school's current `appKey` in it, then run
+`./scripts/secrets.sh apply`. Get the value from the official campus portal entry. The other parameters
+(`fidEnc`, `mappId`, `wfwEnc`) live in the source and are this school's configuration; they will not work
+elsewhere.
 
 ### Unsigned IPA for sideloading
 

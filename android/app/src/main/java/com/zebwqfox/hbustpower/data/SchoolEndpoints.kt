@@ -1,5 +1,6 @@
 package com.zebwqfox.hbustpower.data
 
+import com.zebwqfox.hbustpower.BuildConfig
 import java.net.URI
 
 /**
@@ -22,18 +23,23 @@ object SchoolEndpoints {
     const val USER_AGREEMENT_URL = "https://homewh.chaoxing.com/agree/userAgreement?appId=900001"
 
     /** The 学习通 entry the school configured for this app; identity comes from whoever signs in. */
-    const val CHAOXING_AUTH_URL =
+    /** Supplied at build time from secrets.properties; empty when the project has not been configured. */
+    val schoolAppKey: String = BuildConfig.SCHOOL_APP_KEY
+
+    val isConfigured: Boolean get() = schoolAppKey.isNotEmpty()
+
+    val CHAOXING_AUTH_URL: String =
         "https://auth.chaoxing.com/connect/oauth2/authorize?" +
             "appid=50a29846d03b4717a867534162983482&" +
             "redirect_uri=http%3A%2F%2Fecard.hbust.edu.cn%2Fberserker-auth%2Fcas%2Flogin%2Fchaoxing%3F" +
             "targetUrl%3Dhttp%253A%252F%252Fecard.hbust.edu.cn%252Fplat%253Fname%253DloginTransit%2526source%253Dh5%26" +
             "fidEnc%3D47b2091e0a42b962%26mappId%3D6312211%26" +
             "mappIdEnc%3Ddd8f03b5452dfa36f5d0c01c4bbc43bd%26wfwEnc%3D5D42DB954FB3413292028505161D21F0%26" +
-            "appId%3D50a29846d03b4717a867534162983482%26appKey%3D7s1f6B0V23za1HL6&" +
+            "appId%3D50a29846d03b4717a867534162983482%26appKey%3D" + schoolAppKey + "&" +
             "response_type=code&scope=snsapi_base&state=127819"
 
     /** Compatibility alias for passive session checks; interactive logins offer school SSO first. */
-    const val AUTH_URL = CHAOXING_AUTH_URL
+    val AUTH_URL: String get() = CHAOXING_AUTH_URL
 
     /** Cookie-bearing URLs used when counting session cookies for diagnostics. */
     val sessionCookieUrls = listOf("http://$ELECTRICITY_HOST/", "http://$ECARD_HOST/", "https://$ECARD_HOST/")

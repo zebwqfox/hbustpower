@@ -18,19 +18,30 @@ actor ElectricityService {
     // and returns 404 when opened directly with GET.
     static let rechargeURL = URL(string: "http://xianankd.hbust.edu.cn/pay/home")!
 
-    static let chaoxingAuthURL = URL(string:
-        "https://auth.chaoxing.com/connect/oauth2/authorize?" +
-        "appid=50a29846d03b4717a867534162983482&" +
-        "redirect_uri=http%3A%2F%2Fecard.hbust.edu.cn%2Fberserker-auth%2Fcas%2Flogin%2Fchaoxing%3F" +
-        "targetUrl%3Dhttp%253A%252F%252Fecard.hbust.edu.cn%252Fplat%253Fname%253DloginTransit%2526source%253Dh5%26" +
-        "fidEnc%3D47b2091e0a42b962%26mappId%3D6312211%26" +
-        "mappIdEnc%3Ddd8f03b5452dfa36f5d0c01c4bbc43bd%26wfwEnc%3D5D42DB954FB3413292028505161D21F0%26" +
-        "appId%3D50a29846d03b4717a867534162983482%26appKey%3DREPLACE_WITH_YOUR_SCHOOL_APP_KEY&" +
-        "response_type=code&scope=snsapi_base&state=127819"
-    )!
+    /// The school's OAuth app key. It is kept out of version control: `scripts/secrets.sh apply` writes it into
+    /// `ios/Config/Secrets.xcconfig`, which feeds the `SchoolAppKey` entry of Info.plist.
+    static var schoolAppKey: String {
+        let value = Bundle.main.object(forInfoDictionaryKey: "SchoolAppKey") as? String ?? ""
+        return value.hasPrefix("REPLACE_WITH") ? "" : value
+    }
+
+    static var isConfigured: Bool { !schoolAppKey.isEmpty }
+
+    static var chaoxingAuthURL: URL {
+        URL(string:
+            "https://auth.chaoxing.com/connect/oauth2/authorize?" +
+            "appid=50a29846d03b4717a867534162983482&" +
+            "redirect_uri=http%3A%2F%2Fecard.hbust.edu.cn%2Fberserker-auth%2Fcas%2Flogin%2Fchaoxing%3F" +
+            "targetUrl%3Dhttp%253A%252F%252Fecard.hbust.edu.cn%252Fplat%253Fname%253DloginTransit%2526source%253Dh5%26" +
+            "fidEnc%3D47b2091e0a42b962%26mappId%3D6312211%26" +
+            "mappIdEnc%3Ddd8f03b5452dfa36f5d0c01c4bbc43bd%26wfwEnc%3D5D42DB954FB3413292028505161D21F0%26" +
+            "appId%3D50a29846d03b4717a867534162983482%26appKey%3D" + schoolAppKey + "&" +
+            "response_type=code&scope=snsapi_base&state=127819"
+        )!
+    }
 
     // Compatibility alias for passive session checks.
-    static let authURL = chaoxingAuthURL
+    static var authURL: URL { chaoxingAuthURL }
 
     private let homeURL = URL(string: "http://xianankd.hbust.edu.cn/pay/home")!
     private let useURL = URL(string: "http://xianankd.hbust.edu.cn/use/record")!

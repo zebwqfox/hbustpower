@@ -1,0 +1,11 @@
+{
+  "room": "演示校区/示例楼/101",
+  "purchasedKWh": 60,
+  "subsidyKWh": 0,
+  "unitPrice": 0.57,
+  "usageCount": 14,
+  "rechargeCount": 1,
+  "lightingAverage": 2,
+  "acAverage": 8,
+  "predictedDays": 6
+}

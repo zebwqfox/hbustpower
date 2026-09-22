@@ -18,14 +18,6 @@ actor ElectricityService {
     // and returns 404 when opened directly with GET.
     static let rechargeURL = URL(string: "http://xianankd.hbust.edu.cn/pay/home")!
 
-    /// The school's e-card service publishes this as its unified identity entry.
-    /// It currently redirects to sso.hbust.edu.cn:28000 over HTTP, so credentials
-    /// must stay inside the official WKWebView page and are never injected by us.
-    static let schoolSSOAuthURL = URL(string:
-        "http://ecard.hbust.edu.cn/berserker-auth/cas/commonoauth2/redirect?" +
-        "resultUrl=http%3A%2F%2Fecard.hbust.edu.cn%2Fplat%3Fname%3DloginTransit"
-    )!
-
     static let chaoxingAuthURL = URL(string:
         "https://auth.chaoxing.com/connect/oauth2/authorize?" +
         "appid=50a29846d03b4717a867534162983482&" +
@@ -37,8 +29,7 @@ actor ElectricityService {
         "response_type=code&scope=snsapi_base&state=127819"
     )!
 
-    // Compatibility alias for passive session checks. New interactive connections
-    // offer school SSO first in AuthenticationViewController.
+    // Compatibility alias for passive session checks.
     static let authURL = chaoxingAuthURL
 
     private let homeURL = URL(string: "http://xianankd.hbust.edu.cn/pay/home")!

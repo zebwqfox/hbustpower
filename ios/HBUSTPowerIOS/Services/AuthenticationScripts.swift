@@ -13,44 +13,6 @@ enum AuthenticationScripts {
         return url.host?.lowercased() == "ecard.hbust.edu.cn" && (url.path == "/plat" || url.path.hasPrefix("/plat/"))
     }
 
-    static func isSchoolSSO(_ url: URL?) -> Bool {
-        guard let url else { return false }
-        return url.scheme == "http" && url.host?.lowercased() == "sso.hbust.edu.cn"
-            && url.port == 28000 && (url.path == "/login" || url.path.hasPrefix("/login/"))
-    }
-
-    static func isSchoolSSOEntry(_ url: URL?) -> Bool {
-        guard let url, url.scheme == "http", url.host?.lowercased() == "ecard.hbust.edu.cn",
-              url.path == "/berserker-auth/cas/commonoauth2/redirect",
-              let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return false }
-        let resultURLs = components.queryItems?.filter { $0.name == "resultUrl" } ?? []
-        return resultURLs.count == 1 && resultURLs.first?.value == "http://ecard.hbust.edu.cn/plat?name=loginTransit"
-    }
-
-    static func isSchoolSSODenialMessage(_ text: String) -> Bool {
-        text.contains("服务大厅未授权")
-    }
-
-    static let schoolSSOObserver = #"""
-    (() => {
-      if (window.top !== window || location.protocol !== 'http:' || location.hostname !== 'sso.hbust.edu.cn'
-        || location.port !== '28000' || !(location.pathname === '/login' || location.pathname.startsWith('/login/'))
-        || window.__powerSchoolSSOObserver) return;
-      window.__powerSchoolSSOObserver = true;
-      let reported = false;
-      const check = () => {
-        if (reported || !(document.body?.innerText || '').includes('服务大厅未授权')) return;
-        reported = true;
-        observer.disconnect();
-        window.webkit?.messageHandlers?.powerAuth?.postMessage('school-sso-service-denied');
-      };
-      const observer = new MutationObserver(check);
-      observer.observe(document.documentElement, {childList:true, subtree:true, characterData:true});
-      setTimeout(() => observer.disconnect(), 30000);
-      check();
-    })();
-    """#
-
     static let formReady = #"""
     (() => location.protocol === 'https:' && location.hostname === 'passport2.chaoxing.com' && location.pathname === '/mlogin'
       && !!document.querySelector('#phone') && !!document.querySelector('#pwd')

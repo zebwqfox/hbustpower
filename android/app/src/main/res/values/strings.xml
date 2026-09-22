@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">湖科电量</string>
+    <!-- 备案通过后填入工信部给出的备案号，例如 鄂ICP备2026000000号-2A；留空则关于页不显示该行。 -->
+    <string name="icp_filing_number" translatable="false"></string>
+</resources>

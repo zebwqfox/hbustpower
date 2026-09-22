@@ -1,0 +1,199 @@
+{
+  "_note": "由 tools/ios-parser-harness 使用 iOS 1.7.1 的 ElectricityHTMLParser 与 UsageInsights 实际运行生成；Android 解析与小发现测试应得到相同结果。dateEpoch 为 Unix 秒，学校时间按 Asia/Shanghai 解析。",
+  "homeFooterAuth": {
+    "isLoginPage": false,
+    "isLoginPlaceholder": false,
+    "meters": [
+      {
+        "communicationStatus": "通讯正常",
+        "name": "示例楼101照明",
+        "powerStatus": "正常用电"
+      },
+      {
+        "communicationStatus": "通讯正常",
+        "name": "示例楼101空调",
+        "powerStatus": "拉闸断电"
+      }
+    ],
+    "purchasedKWh": 194.67,
+    "room": "演示校区/示例楼/101",
+    "subsidyKWh": 0,
+    "unitPrice": 0.57
+  },
+  "insights": [
+    {
+      "insights": [
+        {
+          "caption": "最近 7 天比之前 7 天",
+          "id": "week",
+          "sticker": "省电小能手",
+          "tone": "good",
+          "value": "省了 20%"
+        },
+        {
+          "caption": "低于日均 18.0 度",
+          "id": "streak",
+          "sticker": "一周达成",
+          "tone": "good",
+          "value": "连续 7 天"
+        },
+        {
+          "id": "peak",
+          "sticker": null,
+          "tone": "neutral",
+          "value": "20.0 度"
+        },
+        {
+          "caption": "最近 7 天的电都去哪了",
+          "id": "ac",
+          "sticker": null,
+          "tone": "neutral",
+          "value": "空调占 75%"
+        },
+        {
+          "caption": "剩余电量折合电费",
+          "id": "value",
+          "sticker": null,
+          "tone": "neutral",
+          "value": "约 ¥57.00"
+        }
+      ],
+      "name": "week-saving"
+    },
+    {
+      "insights": [
+        {
+          "caption": "最近 7 天的电都去哪了",
+          "id": "ac",
+          "sticker": null,
+          "tone": "neutral",
+          "value": "空调占 75%"
+        }
+      ],
+      "name": "not-enough-history"
+    },
+    {
+      "insights": [
+        {
+          "caption": "低于日均 23.2 度",
+          "id": "streak",
+          "sticker": null,
+          "tone": "good",
+          "value": "连续 3 天"
+        },
+        {
+          "id": "peak",
+          "sticker": null,
+          "tone": "neutral",
+          "value": "35.0 度"
+        },
+        {
+          "caption": "最近 7 天的电都去哪了",
+          "id": "ac",
+          "sticker": "空调重度用户",
+          "tone": "heads",
+          "value": "空调占 81%"
+        },
+        {
+          "caption": "剩余电量折合电费",
+          "id": "value",
+          "sticker": null,
+          "tone": "neutral",
+          "value": "约 ¥57.00"
+        },
+        {
+          "caption": "上一次充值",
+          "id": "recharge",
+          "sticker": null,
+          "tone": "neutral",
+          "value": "12 天前"
+        }
+      ],
+      "name": "streak-peak-share-value-recharge"
+    }
+  ],
+  "legacy": {
+    "acAverage": 8,
+    "lightingAverage": 2,
+    "meters": [
+      {
+        "communicationStatus": "通讯正常",
+        "name": "示例101照明",
+        "powerStatus": "正常用电"
+      },
+      {
+        "communicationStatus": "通讯正常",
+        "name": "示例101空调",
+        "powerStatus": "正常用电"
+      }
+    ],
+    "predictedDays": 6,
+    "purchasedKWh": 60,
+    "rechargeCount": 1,
+    "room": "演示校区/示例楼/101",
+    "subsidyKWh": 0,
+    "unitPrice": 0.57,
+    "usageCount": 14
+  },
+  "loginDetection": [
+    {
+      "case": "login-form.html at /pay/home",
+      "isLoginPage": true
+    },
+    {
+      "case": "empty body at https://ecard.hbust.edu.cn/Login?next=1",
+      "isLoginPage": true
+    },
+    {
+      "case": "body 'Session过期，请重新进入'",
+      "isLoginPage": true
+    },
+    {
+      "case": "login-script-rendered.html at /pay/home",
+      "isLoginPage": false,
+      "isLoginPlaceholderAsHome": true
+    }
+  ],
+  "recordsMissingFields": [
+    {
+      "amountText": "50.00元",
+      "dateEpoch": 1789012800,
+      "kWhText": "-",
+      "meterName": "-",
+      "studentNumber": null,
+      "type": "一卡通充值"
+    },
+    {
+      "amountText": "100.00元",
+      "dateEpoch": 1788222600,
+      "kWhText": "175.44度",
+      "meterName": "示例楼101",
+      "studentNumber": "2026123456",
+      "type": "微信充值"
+    }
+  ],
+  "timestamps": [
+    {
+      "epoch": 1789574399,
+      "text": "2026-09-16 23:59:59"
+    },
+    {
+      "epoch": null,
+      "text": "2026-13-01 00:00:00"
+    }
+  ],
+  "usageMissingFields": [
+    {
+      "dateEpoch": 1789487999,
+      "kind": "照明",
+      "kWh": 4.8,
+      "meterName": "示例楼101照明"
+    },
+    {
+      "dateEpoch": 1789487999,
+      "kind": "空调",
+      "kWh": 21.59,
+      "meterName": "示例楼101空调"
+    }
+  ]
+}

@@ -2,16 +2,7 @@ import UIKit
 import WebKit
 import SafariServices
 
-private final class WeakAuthenticationScriptHandler: NSObject, WKScriptMessageHandler {
-    weak var delegate: WKScriptMessageHandler?
-    init(delegate: WKScriptMessageHandler) { self.delegate = delegate }
-    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        delegate?.userContentController(userContentController, didReceive: message)
-    }
-}
-
-final class AuthenticationViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, UITextFieldDelegate, WKScriptMessageHandler {
-    private enum AuthenticationProvider { case schoolSSO, chaoxing }
+final class AuthenticationViewController: UIViewController, WKNavigationDelegate, WKUIDelegate, UITextFieldDelegate {
 
     private let model: AppModel
     private let webView: WKWebView
@@ -26,10 +17,6 @@ final class AuthenticationViewController: UIViewController, WKNavigationDelegate
     private let loginAccent = UIColor(red: 0.25, green: 0.52, blue: 0.97, alpha: 1)
     private let consentButton = PowerActionButton(type: .system)
     private let alternativeButton = PowerActionButton(type: .system)
-    private let schoolSSOButton = PowerActionButton(type: .system)
-    private var authenticationProvider: AuthenticationProvider = .chaoxing
-    private var scriptMessageHandler: WeakAuthenticationScriptHandler?
-    private var schoolSSODenialPresented = false
     private var agreed = false
     private var formReady = false
     private var submitting = false
@@ -46,22 +33,17 @@ final class AuthenticationViewController: UIViewController, WKNavigationDelegate
         configuration.websiteDataStore = .default()
         configuration.preferences.javaScriptCanOpenWindowsAutomatically = true
         configuration.defaultWebpagePreferences.preferredContentMode = .mobile
-        configuration.userContentController.addUserScript(WKUserScript(source: AuthenticationScripts.schoolSSOObserver, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         if onCampusConnected == nil {
             configuration.userContentController.addUserScript(WKUserScript(source: AuthenticationScripts.portal, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
         }
         webView = WKWebView(frame: .zero, configuration: configuration)
         super.init(nibName: nil, bundle: nil)
-        let handler = WeakAuthenticationScriptHandler(delegate: self)
-        scriptMessageHandler = handler
-        configuration.userContentController.add(handler, name: "powerAuth")
         webView.customUserAgent = AuthenticationScripts.mobileUserAgent
     }
 
     @available(*, unavailable) required init?(coder: NSCoder) { fatalError() }
     deinit {
         monitor?.cancel(); navigationTimeout?.cancel(); cookieTransfer?.cancel()
-        webView.configuration.userContentController.removeScriptMessageHandler(forName: "powerAuth")
     }
 
     override func viewDidLoad() {
@@ -132,53 +114,6 @@ final class AuthenticationViewController: UIViewController, WKNavigationDelegate
             content.topAnchor.constraint(equalTo: nativeScroll.contentLayoutGuide.topAnchor, constant: 32),
             content.bottomAnchor.constraint(equalTo: nativeScroll.contentLayoutGuide.bottomAnchor, constant: -24)
         ])
-        let schoolIcon = UIImageView(image: UIImage(systemName: "building.columns.fill"))
-        schoolIcon.tintColor = loginAccent
-        schoolIcon.contentMode = .scaleAspectFit
-        schoolIcon.widthAnchor.constraint(equalToConstant: 42).isActive = true
-        schoolIcon.heightAnchor.constraint(equalToConstant: 42).isActive = true
-        schoolIcon.isAccessibilityElement = true
-        schoolIcon.accessibilityLabel = "湖北科技学院"
-        let schoolTitle = UILabel.powerLabel("学校统一身份认证", style: .title2, weight: .semibold)
-        let schoolBrand = UIStackView(arrangedSubviews: [schoolIcon, schoolTitle])
-        schoolBrand.alignment = .center
-        schoolBrand.spacing = 12
-        content.addArrangedSubview(schoolBrand)
-
-        let schoolDetail = UILabel.powerLabel(
-            "优先使用学校统一身份认证，成功后继续连接一卡通。账号和密码只在学校官方页面输入。",
-            style: .footnote,
-            color: .secondaryLabel
-        )
-        content.addArrangedSubview(schoolDetail)
-
-        var schoolConfiguration = UIButton.Configuration.prominentGlass()
-        schoolConfiguration.title = "使用学校统一身份认证"
-        schoolConfiguration.image = UIImage(systemName: "person.badge.key.fill")
-        schoolConfiguration.imagePadding = 8
-        schoolConfiguration.baseBackgroundColor = loginAccent
-        schoolConfiguration.baseForegroundColor = .white
-        schoolConfiguration.cornerStyle = .capsule
-        schoolConfiguration.contentInsets = .init(top: 14, leading: 18, bottom: 14, trailing: 18)
-        schoolSSOButton.configuration = schoolConfiguration
-        schoolSSOButton.accessibilityIdentifier = "auth.schoolSSO"
-        schoolSSOButton.heightAnchor.constraint(greaterThanOrEqualToConstant: 50).isActive = true
-        schoolSSOButton.addAction(UIAction { [weak self] _ in self?.confirmSchoolSSO() }, for: .touchUpInside)
-        content.addArrangedSubview(schoolSSOButton)
-
-        let transportWarning = UILabel.powerLabel(
-            "测试入口 · 学校当前登录页为 HTTP，进入前会再次提示",
-            style: .caption1,
-            color: .systemOrange
-        )
-        transportWarning.textAlignment = .center
-        content.addArrangedSubview(transportWarning)
-        content.setCustomSpacing(30, after: transportWarning)
-
-        let fallbackTitle = UILabel.powerLabel("备用：学习通认证", style: .headline, color: .secondaryLabel)
-        content.addArrangedSubview(fallbackTitle)
-        content.setCustomSpacing(12, after: fallbackTitle)
-
         let logo = UIImageView(image: UIImage(named: "XuexitongLogo"))
         logo.contentMode = .scaleAspectFit
         logo.widthAnchor.constraint(equalToConstant: 52).isActive = true
@@ -202,8 +137,8 @@ final class AuthenticationViewController: UIViewController, WKNavigationDelegate
         content.addArrangedSubview(stages)
         setFlowStage(0)
         let detail = UILabel.powerLabel(onCampusConnected == nil
-            ? "也可使用学习通完成验证。验证通过后，即可查看已绑定宿舍的电量。"
-            : "也可使用学习通完成验证。验证通过后，即可查看校园卡余额。", style: .footnote, color: .secondaryLabel)
+            ? "使用学习通完成验证。验证通过后，即可查看已绑定宿舍的电量。"
+            : "使用学习通完成验证。验证通过后，即可查看校园卡余额。", style: .footnote, color: .secondaryLabel)
         content.addArrangedSubview(detail)
         content.setCustomSpacing(24, after: detail)
         configureField(accountField, placeholder: "手机号 / 超星号", secure: false)
@@ -357,48 +292,12 @@ final class AuthenticationViewController: UIViewController, WKNavigationDelegate
     }
 
     private func loadLogin() {
-        authenticationProvider = .chaoxing
         formReady = false
         submitting = false
         statusLabel.text = ""
         alternativeButton.configuration?.title = "打开学习通官方页面"
         updateButton()
         webView.load(URLRequest(url: ElectricityService.chaoxingAuthURL))
-        startTimeout()
-    }
-
-    private func confirmSchoolSSO() {
-        let alert = UIAlertController(
-            title: "学校登录页当前为 HTTP",
-            message: "一卡通公布的统一身份认证入口会跳转到未加密的 HTTP 页面。账号和密码只在学校官方网页中输入，本应用不读取、不保存；请避免在不可信的公共网络中使用。",
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
-        alert.addAction(UIAlertAction(title: "继续测试", style: .default) { [weak self] _ in self?.startSchoolSSO() })
-        present(alert, animated: true)
-    }
-
-    private func startSchoolSSO() {
-        guard AuthenticationScripts.isSchoolSSOEntry(ElectricityService.schoolSSOAuthURL) else {
-            statusLabel.text = "学校统一认证入口配置无效。"
-            return
-        }
-        authenticationProvider = .schoolSSO
-        schoolSSODenialPresented = false
-        showingWeb = true
-        monitor?.cancel()
-        view.endEditing(true)
-        passwordField.text = nil
-        nativeScroll.isHidden = true
-        webView.isHidden = false
-        setContentScrollView(webView.scrollView, for: .all)
-        title = "学校统一身份认证"
-        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "改用学习通", primaryAction: UIAction { [weak self] _ in
-            self?.returnToNativeLogin()
-        })
-        statusLabel.text = ""
-        PowerDiagnostics.shared.record("开始学校统一身份认证")
-        webView.load(URLRequest(url: ElectricityService.schoolSSOAuthURL))
         startTimeout()
     }
 
@@ -456,8 +355,7 @@ final class AuthenticationViewController: UIViewController, WKNavigationDelegate
     }
 
     private func retryCurrentProvider() {
-        if authenticationProvider == .schoolSSO { startSchoolSSO() }
-        else { loadLogin() }
+        loadLogin()
     }
 
     private func returnToNativeLogin() {
@@ -471,25 +369,7 @@ final class AuthenticationViewController: UIViewController, WKNavigationDelegate
         loadLogin()
     }
 
-    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard message.name == "powerAuth", message.body as? String == "school-sso-service-denied",
-              authenticationProvider == .schoolSSO, AuthenticationScripts.isSchoolSSO(webView.url),
-              !schoolSSODenialPresented else { return }
-        schoolSSODenialPresented = true
-        navigationTimeout?.cancel()
-        PowerDiagnostics.shared.record("学校统一认证：服务大厅未向当前账号授权")
-        let alert = UIAlertController(
-            title: "学校侧尚未授权",
-            message: "统一身份认证已经识别到账号，但学校尚未向该账号开放“服务大厅”。这不是密码错误，应用也不能绕过学校权限。现在可以改用学习通；正式启用需由学校管理员开放服务大厅权限。",
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "留在学校页面", style: .cancel))
-        alert.addAction(UIAlertAction(title: "改用学习通", style: .default) { [weak self] _ in self?.returnToNativeLogin() })
-        present(alert, animated: true)
-    }
-
     private func showOfficialPage() {
-        authenticationProvider = .chaoxing
         showingWeb = true
         monitor?.cancel()
         view.endEditing(true)
@@ -537,17 +417,6 @@ final class AuthenticationViewController: UIViewController, WKNavigationDelegate
             }
             return
         }
-        if authenticationProvider == .schoolSSO, (navigationAction.targetFrame?.isMainFrame ?? true),
-           !AuthenticationScripts.isSchoolSSO(url), !AuthenticationScripts.isCampusPortal(url),
-           url.host?.lowercased() != "ecard.hbust.edu.cn", url.scheme != "about" {
-            decisionHandler(.cancel)
-            navigationTimeout?.cancel()
-            PowerDiagnostics.shared.record("学校统一认证阻止了非学校域名跳转")
-            let alert = UIAlertController(title: "已阻止未知跳转", message: "学校认证尝试离开 hbust.edu.cn，应用已停止本次跳转。你可以改用学习通认证。", preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "改用学习通", style: .default) { [weak self] _ in self?.returnToNativeLogin() })
-            present(alert, animated: true)
-            return
-        }
         decisionHandler(.allow)
     }
 
@@ -556,12 +425,7 @@ final class AuthenticationViewController: UIViewController, WKNavigationDelegate
         print("AUTH_FINISH \(webView.url?.host ?? "")\(webView.url?.path ?? "") completed=\(completed)")
 #endif
         guard !completed else { return }
-        if AuthenticationScripts.isSchoolSSO(webView.url) {
-            showingWeb = true
-            navigationTimeout?.cancel()
-            title = "学校统一身份认证"
-            PowerDiagnostics.shared.record("已到达学校统一身份认证页面")
-        } else if AuthenticationScripts.isLoginForm(webView.url) {
+        if AuthenticationScripts.isLoginForm(webView.url) {
             webView.evaluateJavaScript(AuthenticationScripts.formReady) { [weak self] result, _ in
                 guard let self, AuthenticationScripts.isLoginForm(self.webView.url) else { return }
                 self.formReady = result as? Bool == true

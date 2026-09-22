@@ -1,0 +1,10 @@
+/.gradle/
+/.idea/
+/local.properties
+/**/build/
+*.iml
+captures/
+# Signing material for the filed release build; never commit these.
+keystore.properties
+*.jks
+*.keystore

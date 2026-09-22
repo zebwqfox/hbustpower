@@ -2,13 +2,13 @@
 
 # 湖科电量 · HBUST Power
 
-A native iOS app for checking your dorm's electricity balance at Hubei University of Science and Technology.
+Native iOS and Android apps for checking your dorm's electricity balance at Hubei University of Science and Technology.
 
 [简体中文](README.zh-CN.md) · English
 
-[![Platform](https://img.shields.io/badge/platform-iOS%2026%2B-000000?logo=apple&logoColor=white)](#requirements)
-[![Swift](https://img.shields.io/badge/Swift-5.0-F05138?logo=swift&logoColor=white)](#requirements)
-[![Tests](https://img.shields.io/badge/tests-26%20passing-2EA043)](#testing)
+[![Platforms](https://img.shields.io/badge/platforms-iOS%2026%2B%20%7C%20Android%206%2B-2563EB)](#requirements)
+[![Languages](https://img.shields.io/badge/Swift%20%7C%20Kotlin-native-F05138)](#requirements)
+[![Tests](https://img.shields.io/badge/tests-71-2EA043)](#testing)
 
 <img src="docs/screenshots/home-light.png" width="250" alt="Home screen" />
 <img src="docs/screenshots/home-dark.png" width="250" alt="Dark mode" />
@@ -110,20 +110,20 @@ Layout decisions come from size classes, not from screen dimensions or orientati
 
 - Sign-in happens on the school's own Chaoxing page. The app fills the fields you typed and never saves the
   password.
-- Only the authorization link is kept, in the Keychain with `AfterFirstUnlockThisDeviceOnly`.
+- Only the authorization link is kept: iOS uses the Keychain and Android encrypts it with Android Keystore.
 - No backend. Every request goes directly to the school.
 - Diagnostics contain no account, dorm number, authorization URL or cookie values.
 - Redirect URLs are checked strictly: exact host and path, exactly one `appId=180`, one non-empty token.
 
 ## Getting started
 
-### Requirements
+### iOS requirements
 
 - Xcode 26 or newer (27.1+ for the iPhone Duo simulator)
 - iOS 26 or newer
 - A paid Apple Developer team if you want the widgets to show real data
 
-### Build
+### Build iOS
 
 ```sh
 git clone https://github.com/zebwqfox/hbustpower.git
@@ -132,6 +132,17 @@ open HBUSTPowerIOS.xcodeproj
 ```
 
 Pick your team under Signing & Capabilities, select a device, and run.
+
+### Build Android
+
+Android requires SDK Platform 37, Build Tools 36+, and JDK 17–26. The minimum supported version is Android 6.
+
+```powershell
+cd android
+.\gradlew.bat testDebugUnitTest assembleDebug lintDebug
+```
+
+The debug APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`. See the [Android development guide](android/README.md) for details.
 
 ### Configure the school entry point
 
@@ -182,6 +193,9 @@ ios/
 ├─ Shared/              Code shared by app and widgets
 ├─ HBUSTPowerIOSTests/  Unit tests
 └─ WidgetSupport/       Widget Info.plist and entitlements
+android/                 Kotlin + Jetpack Compose Android client
+fixtures/                Redacted HTML fixtures shared by both clients
+filing/                  Privacy policy, user agreement, and filing materials
 ```
 
 How data flows: a WebView completes the official sign-in, the app captures the electricity redirect, copies the
@@ -196,16 +210,16 @@ xcodebuild test -project HBUSTPowerIOS.xcodeproj -scheme '湖科电量' \
   -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
-26 tests cover the fragile parts: HTML parsing (missing fields must not bleed into the next record, dates are
-always Beijing time, a footer mentioning the auth service is not a login page), usage insights, the planner's
-arithmetic, theme definitions, widget snapshots, and the changelog staying in sync with the app version.
+The iOS suite has 27 XCTest methods. Android has 44 JVM unit tests and passes Android Lint. Both clients cover
+the fragile parts, including HTML parsing, redirect validation, usage estimates, recharge planning, and changelog
+consistency.
 
 ## Roadmap
 
 - [x] iOS app
 - [x] Themes, widgets, recharge planner
 - [x] iPhone Duo adaptation
-- [ ] Android client (Kotlin + Jetpack Compose), landing in `android/`
+- [x] Android client (Kotlin + Jetpack Compose), in `android/`
 - [ ] Widgets verified on a device with a paid signing team
 
 ## Credits

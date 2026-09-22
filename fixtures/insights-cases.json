@@ -1,0 +1,120 @@
+[
+  {
+    "name": "week-saving",
+    "description": "前 7 天每天照明5+空调15，后 7 天照明4+空调12",
+    "daily": [
+      [
+        5,
+        15
+      ],
+      [
+        5,
+        15
+      ],
+      [
+        5,
+        15
+      ],
+      [
+        5,
+        15
+      ],
+      [
+        5,
+        15
+      ],
+      [
+        5,
+        15
+      ],
+      [
+        5,
+        15
+      ],
+      [
+        4,
+        12
+      ],
+      [
+        4,
+        12
+      ],
+      [
+        4,
+        12
+      ],
+      [
+        4,
+        12
+      ],
+      [
+        4,
+        12
+      ],
+      [
+        4,
+        12
+      ],
+      [
+        4,
+        12
+      ]
+    ],
+    "balance": 100,
+    "unitPrice": 0.57,
+    "rechargeEpoch": null,
+    "nowEpoch": 1789606800
+  },
+  {
+    "name": "not-enough-history",
+    "description": "只有 2 天，没有电价",
+    "daily": [
+      [
+        5,
+        15
+      ],
+      [
+        5,
+        15
+      ]
+    ],
+    "balance": 100,
+    "unitPrice": null,
+    "rechargeEpoch": null,
+    "nowEpoch": 1789606800
+  },
+  {
+    "name": "streak-peak-share-value-recharge",
+    "description": "6 天用量，9月5日20:00充值，9月17日查看",
+    "daily": [
+      [
+        5,
+        25
+      ],
+      [
+        5,
+        25
+      ],
+      [
+        5,
+        30
+      ],
+      [
+        4,
+        10
+      ],
+      [
+        4,
+        10
+      ],
+      [
+        4,
+        12
+      ]
+    ],
+    "balance": 100,
+    "unitPrice": 0.57,
+    "rechargeEpoch": 1788609600,
+    "nowEpoch": 1789606800
+  }
+]

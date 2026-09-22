@@ -59,7 +59,7 @@ final class CampusCardViewController: UIViewController, WKNavigationDelegate {
         stack.addArrangedSubview(login)
         let recharge = PowerTheme.button("前往智慧湖科充值", image: "arrow.up.right", primary: true)
         recharge.addAction(UIAction { [weak self] _ in
-            UIApplication.shared.open(ElectricityService.schoolSSOAuthURL) { success in
+            UIApplication.shared.open(CampusCardScripts.portalURL) { success in
                 if !success { DispatchQueue.main.async { self?.note.text = "无法打开智慧湖科，请稍后重试。" } }
             }
         }, for: .touchUpInside)

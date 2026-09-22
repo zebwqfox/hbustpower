@@ -60,18 +60,8 @@ enum AuthenticationLayoutVerification {
             for raw in ["http://passport2.chaoxing.com/mlogin", "https://passport2.chaoxing.com.evil.invalid/mlogin", "https://passport2.chaoxing.com/v11/updateweakpwd"] {
                 precondition(!AuthenticationScripts.isLoginForm(URL(string: raw)))
             }
-            precondition(AuthenticationScripts.isSchoolSSOEntry(ElectricityService.schoolSSOAuthURL))
-            precondition(AuthenticationScripts.isSchoolSSO(URL(string: "http://sso.hbust.edu.cn:28000/login/oauth/authorize")))
-            for raw in [
-                "https://sso.hbust.edu.cn:28000/login/oauth/authorize",
-                "http://sso.hbust.edu.cn/login/oauth/authorize",
-                "http://sso.hbust.edu.cn.evil.invalid:28000/login/oauth/authorize",
-                "http://sso.hbust.edu.cn:28000/other"
-            ] {
-                precondition(!AuthenticationScripts.isSchoolSSO(URL(string: raw)))
-            }
             precondition(!ElectricityService.isValidElectricityRedirect(URL(string: "https://ecard.hbust.edu.cn/berserker-base/redirect?appId=180&appId=180&synjones-auth=test")!))
-            print("AUTH_CHECK PASS: exact Chaoxing and school SSO origins; duplicate redirect rejection")
+            print("AUTH_CHECK PASS: exact Chaoxing origin; duplicate redirect rejection")
             let fixture = Fixture()
             try await fixture.load(#"""
             <html><body><input id="phone"><input id="pwd" type="password">

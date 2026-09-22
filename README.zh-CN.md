@@ -2,13 +2,13 @@
 
 # 湖科电量
 
-湖北科技学院宿舍电量查询的 iOS 客户端。
+湖北科技学院宿舍电量查询的 iOS 与 Android 客户端。
 
 简体中文 · [English](README.md)
 
-[![Platform](https://img.shields.io/badge/platform-iOS%2026%2B-000000?logo=apple&logoColor=white)](#环境要求)
-[![Swift](https://img.shields.io/badge/Swift-5.0-F05138?logo=swift&logoColor=white)](#环境要求)
-[![Tests](https://img.shields.io/badge/tests-26%20passing-2EA043)](#测试)
+[![Platforms](https://img.shields.io/badge/platforms-iOS%2026%2B%20%7C%20Android%206%2B-2563EB)](#环境要求)
+[![Languages](https://img.shields.io/badge/Swift%20%7C%20Kotlin-native-F05138)](#环境要求)
+[![Tests](https://img.shields.io/badge/tests-71-2EA043)](#测试)
 
 <img src="docs/screenshots/home-light.png" width="250" alt="首页" />
 <img src="docs/screenshots/home-dark.png" width="250" alt="深色模式" />
@@ -98,20 +98,20 @@
 ## 隐私
 
 - 登录在学校自己的学习通页面完成，应用只是把你输入的内容填进官方表单，不保存密码。
-- 只保存授权链接，存在钥匙串里，使用 `AfterFirstUnlockThisDeviceOnly`。
+- 只保存授权链接；iOS 使用钥匙串，Android 使用 Android Keystore 加密。
 - 没有后端，所有请求直接发给学校。
 - 诊断信息不含账号、宿舍号、授权链接和 Cookie 内容。
 - 授权跳转链接严格校验：主机和路径完全匹配，`appId=180` 和 token 各出现一次且 token 非空。
 
 ## 开始使用
 
-### 环境要求
+### iOS 环境要求
 
 - Xcode 26 或更高（iPhone Duo 模拟器需要 27.1+）
 - iOS 26 或更高
 - 想让小组件显示真实数据，需要付费开发者账号
 
-### 编译运行
+### iOS 编译运行
 
 ```sh
 git clone https://github.com/zebwqfox/hbustpower.git
@@ -120,6 +120,17 @@ open HBUSTPowerIOS.xcodeproj
 ```
 
 在 Signing & Capabilities 里选自己的 Team，选好设备运行即可。
+
+### Android 编译运行
+
+需要 Android SDK Platform 37、Build Tools 36+ 与 JDK 17–26，最低支持 Android 6。
+
+```powershell
+cd android
+.\gradlew.bat testDebugUnitTest assembleDebug lintDebug
+```
+
+调试安装包生成在 `android/app/build/outputs/apk/debug/app-debug.apk`，更多说明见 [Android 开发文档](android/README.md)。
 
 ### 配置学校入口
 
@@ -166,6 +177,9 @@ ios/
 ├─ Shared/              应用与小组件共用的代码
 ├─ HBUSTPowerIOSTests/  单元测试
 └─ WidgetSupport/       小组件的 Info.plist 与权限文件
+android/                 Kotlin + Jetpack Compose 安卓客户端
+fixtures/                两个平台共用的脱敏 HTML 测试样本
+filing/                  隐私政策、用户协议与备案材料
 ```
 
 数据流向：WebView 完成官方登录，应用捕获电费授权跳转，把学校的 Cookie 同步到 HTTP 会话，然后请求三个页面并解析。解析逻辑放在 `ElectricityHTMLParser`，不含网络代码，可以直接用样本测试。
@@ -178,14 +192,14 @@ xcodebuild test -project HBUSTPowerIOS.xcodeproj -scheme '湖科电量' \
   -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
-26 项测试覆盖了容易出问题的地方：HTML 解析（字段缺失不能串到下一条、日期固定按北京时间、页脚提到“统一身份认证”不算登录页）、用电小发现、充值计算、主题定义、小组件数据，以及更新日志与应用版本是否一致。
+iOS 有 27 个 XCTest 测试方法；Android 有 44 项 JVM 单元测试，并通过 Android Lint。两端都覆盖 HTML 解析、授权跳转校验、用量估算、充值计算与更新日志等容易出问题的部分。
 
 ## 计划
 
 - [x] iOS 应用
 - [x] 主题、小组件、充值计算器
 - [x] iPhone Duo 适配
-- [ ] 安卓客户端（Kotlin + Jetpack Compose），放在 `android/`
+- [x] 安卓客户端（Kotlin + Jetpack Compose），位于 `android/`
 - [ ] 用付费账号签名后在真机上验证小组件
 
 ## 致谢

@@ -159,7 +159,7 @@ fun SettingsScreen(model: PowerViewModel, onOpen: (String) -> Unit, onLogin: () 
             rows = listOf(
                 { GroupedRow("关于湖科电量", "开发者的话 · 更新日志", Icons.Filled.Bolt, stacked = true) { onOpen("about") } },
                 { GroupedRow("更新日志", "版本 ${Changelog.latest.version}", Icons.AutoMirrored.Filled.List, stacked = true) { onOpen("changelog") } },
-                { GroupedRow("隐私政策", "不上传电量数据 · 统计默认关闭", Icons.Filled.PrivacyTip, stacked = true) { onOpen("legal:PRIVACY") } },
+                { GroupedRow("隐私政策", "不上传电量数据 · 统计可关闭", Icons.Filled.PrivacyTip, stacked = true) { onOpen("legal:PRIVACY") } },
                 { GroupedRow("用户服务协议", icon = Icons.Filled.Description, disclosure = true) { onOpen("legal:AGREEMENT") } },
             ),
         )

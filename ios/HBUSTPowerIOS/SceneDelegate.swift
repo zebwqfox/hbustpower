@@ -160,7 +160,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func sceneWillEnterForeground(_ scene: UIScene) {
         guard hasStarted else { return }
         model.refresh()
-        model.checkForUpdates(.launch)
+        model.checkForUpdates(.foreground)
         model.reportUsage()
     }
 }

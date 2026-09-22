@@ -108,7 +108,7 @@ fun SettingsScreen(model: PowerViewModel, onOpen: (String) -> Unit, onLogin: () 
         if (model.isUpdateCheckAvailable) {
             GroupedSection(
                 "更新",
-                footer = "只读取作者站点上的一个版本信息文件，不上传任何内容；应用不会自行下载或安装，点“去下载”后在浏览器里完成。",
+                footer = "每次启动检查一次，只读取作者站点上的一个版本信息文件，不上传任何内容；应用不会自行下载或安装，点“去下载”后在浏览器里完成。",
                 rows = listOf(
                     {
                         GroupedRow(

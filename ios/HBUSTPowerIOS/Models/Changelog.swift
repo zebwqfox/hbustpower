@@ -18,6 +18,18 @@ enum Changelog {
 
     static let releases: [Release] = [
         Release(
+            version: "1.10.4",
+            title: "开关立刻生效",
+            summary: "学校页面出问题时，不用再等一天。",
+            sections: [
+                Section(title: "改进", items: [
+                    "改成每次启动都检查一次更新与公告；回到前台也查，但最多每 30 分钟一次",
+                    "之前是每天最多一次——功能开关是拿来救急的，学校页面改版了要马上关掉出问题的入口，等一天就没意义了",
+                    "请求带 ETag，内容没变时服务器只回一个 304，实际传输几百字节",
+                ]),
+            ]
+        ),
+        Release(
             version: "1.10.3",
             title: "会告诉你有新版本",
             summary: "学校系统改版或应用出问题时，不用再靠群里通知。",

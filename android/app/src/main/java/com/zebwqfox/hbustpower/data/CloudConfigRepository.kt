@@ -3,8 +3,17 @@ package com.zebwqfox.hbustpower.data
 import android.content.SharedPreferences
 import androidx.core.content.edit
 
-/** Why a refresh happened, which decides whether the daily throttle applies and whether errors are shown. */
-enum class CloudRefreshTrigger { LAUNCH, MANUAL }
+/** Why a refresh happened, which decides whether a throttle applies and whether errors are shown. */
+enum class CloudRefreshTrigger {
+    /** A cold start. Always checks: the switches exist to take a broken feature down quickly. */
+    LAUNCH,
+
+    /** Returning from the background, which can happen dozens of times a day — hence a short floor. */
+    FOREGROUND,
+
+    /** The user asked. Always checks and always reports what went wrong. */
+    MANUAL,
+}
 
 /** The result of a refresh, as the UI needs to see it. */
 data class CloudConfigState(
@@ -46,10 +55,10 @@ class CloudConfigRepository(
 
     fun shouldCheck(trigger: CloudRefreshTrigger): Boolean = when {
         !isConfigured -> false
-        trigger == CloudRefreshTrigger.MANUAL -> true
-        // Never checked means due now, rather than "due once the clock has been running for a day".
+        trigger != CloudRefreshTrigger.FOREGROUND -> true
+        // Never checked means due now, rather than "due once the clock has been running a while".
         lastCheckedAt() == 0L -> true
-        else -> clock() - lastCheckedAt() >= CHECK_INTERVAL_SECONDS
+        else -> clock() - lastCheckedAt() >= FOREGROUND_INTERVAL_SECONDS
     }
 
     /**
@@ -119,7 +128,8 @@ class CloudConfigRepository(
     }
 
     companion object {
-        const val CHECK_INTERVAL_SECONDS = 24L * 60 * 60
+        /** The shortest gap between two checks triggered by returning to the foreground. */
+        const val FOREGROUND_INTERVAL_SECONDS = 30L * 60
         private const val MAX_DISMISSED = 20
         private const val KEY_JSON = "cloud_config_json"
         private const val KEY_ETAG = "cloud_config_etag"

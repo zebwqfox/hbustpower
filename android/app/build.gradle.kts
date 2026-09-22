@@ -53,8 +53,8 @@ android {
         if (providers.gradleProperty("isolatedVerification").isPresent) applicationIdSuffix = ".verification"
         minSdk = 23
         targetSdk = 36
-        versionCode = 193
-        versionName = "1.9.3"
+        versionCode = 194
+        versionName = "1.9.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true

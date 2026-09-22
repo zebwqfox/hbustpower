@@ -1,7 +1,15 @@
 import Foundation
 
-/// Why a refresh happened, which decides whether the daily throttle applies and whether errors are shown.
-enum CloudRefreshTrigger: Sendable { case launch, manual }
+/// Why a refresh happened, which decides whether a throttle applies and whether errors are shown.
+enum CloudRefreshTrigger: Sendable {
+    /// A cold start. Always checks: the switches exist to take a broken feature down quickly, and waiting a
+    /// day to hear about it would defeat the point.
+    case launch
+    /// Returning from the background, which can happen dozens of times a day — hence a short floor.
+    case foreground
+    /// The user asked. Always checks and always reports what went wrong.
+    case manual
+}
 
 /// What the UI needs to know after a refresh.
 struct CloudConfigState: Equatable, Sendable {
@@ -21,7 +29,8 @@ struct CloudConfigState: Equatable, Sendable {
 /// Nothing here is sent anywhere. It reads a file and remembers what the user dismissed.
 @MainActor
 final class CloudConfigStore {
-    static let checkInterval: TimeInterval = 24 * 60 * 60
+    /// The shortest gap between two checks triggered by returning to the foreground.
+    static let foregroundInterval: TimeInterval = 30 * 60
     private static let maxDismissed = 20
 
     private enum Keys {
@@ -70,10 +79,13 @@ final class CloudConfigStore {
 
     func shouldCheck(_ trigger: CloudRefreshTrigger) -> Bool {
         guard isConfigured else { return false }
-        if trigger == .manual { return true }
-        // Never checked means due now, rather than "due once the clock has been running for a day".
-        if lastCheckedAt == 0 { return true }
-        return now() - lastCheckedAt >= Self.checkInterval
+        switch trigger {
+        case .launch, .manual:
+            return true
+        case .foreground:
+            // Never checked means due now, rather than "due once the clock has been running a while".
+            return lastCheckedAt == 0 || now() - lastCheckedAt >= Self.foregroundInterval
+        }
     }
 
     /// Fetches unless the daily throttle says otherwise, stores what came back, and returns the state to show.

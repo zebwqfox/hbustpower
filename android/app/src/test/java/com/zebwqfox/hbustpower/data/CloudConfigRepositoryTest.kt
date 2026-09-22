@@ -51,23 +51,39 @@ class CloudConfigRepositoryTest {
     }
 
     @Test
-    fun `launch checks are throttled to one a day, manual checks are not`() {
+    fun `every launch checks, because a kill switch that waits a day is not a kill switch`() {
         var now = 1000L
         val fetcher = RecordingFetcher { CloudFetch.Fresh(json(), null) }
-        val prefs = FakePreferences()
-        val repo = repository(fetcher, now = { now }, prefs = prefs)
+        val repo = repository(fetcher, now = { now })
 
-        repo.refresh(CloudRefreshTrigger.LAUNCH)
-        assertEquals(1, fetcher.calls)
-
-        now += 60 * 60
-        repo.refresh(CloudRefreshTrigger.LAUNCH)
-        assertEquals(1, fetcher.calls, "an hour later is still the same day's check")
+        repeat(3) {
+            repo.refresh(CloudRefreshTrigger.LAUNCH)
+            now += 60
+        }
+        assertEquals(3, fetcher.calls, "cold starts are never throttled")
 
         repo.refresh(CloudRefreshTrigger.MANUAL)
-        assertEquals(2, fetcher.calls, "asking by hand always asks")
+        assertEquals(4, fetcher.calls, "asking by hand always asks")
+    }
 
-        now += CloudConfigRepository.CHECK_INTERVAL_SECONDS
+    @Test
+    fun `returning to the foreground is throttled, so app switching does not hammer the server`() {
+        var now = 1000L
+        val fetcher = RecordingFetcher { CloudFetch.Fresh(json(), null) }
+        val repo = repository(fetcher, now = { now })
+
+        repo.refresh(CloudRefreshTrigger.FOREGROUND)
+        assertEquals(1, fetcher.calls, "nothing cached yet, so this one is due")
+
+        now += 60
+        repo.refresh(CloudRefreshTrigger.FOREGROUND)
+        assertEquals(1, fetcher.calls, "a minute later is the same visit")
+
+        now += CloudConfigRepository.FOREGROUND_INTERVAL_SECONDS
+        repo.refresh(CloudRefreshTrigger.FOREGROUND)
+        assertEquals(2, fetcher.calls)
+
+        // A cold start in between ignores the floor entirely.
         repo.refresh(CloudRefreshTrigger.LAUNCH)
         assertEquals(3, fetcher.calls)
     }
@@ -98,7 +114,6 @@ class CloudConfigRepositoryTest {
         fetcher.next = { CloudFetch.Failed("网络请求失败") }
         assertNull(repo.refresh(CloudRefreshTrigger.LAUNCH).error, "a silent check must not interrupt anyone")
 
-        now += CloudConfigRepository.CHECK_INTERVAL_SECONDS
         assertEquals("网络请求失败", repo.refresh(CloudRefreshTrigger.MANUAL).error)
         assertEquals(200, repo.pendingUpdate()?.versionCode, "the cached copy survives a failure")
     }

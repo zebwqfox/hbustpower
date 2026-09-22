@@ -157,7 +157,7 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
     fun onForeground() {
         if (!started) return
         refresh()
-        checkForUpdates(CloudRefreshTrigger.LAUNCH)
+        checkForUpdates(CloudRefreshTrigger.FOREGROUND)
         reportUsage()
     }
 

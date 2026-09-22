@@ -80,11 +80,10 @@ fun RecordsScreen(model: PowerViewModel, onOpenRecord: (Int) -> Unit, onLogin: (
             LargeTitleHeader("充值记录") {
                 RoundIconButton(Icons.Filled.AddCircle, "充值", {
                     when (status) {
-                        PowerStatus.Ready -> { haptics.soft(); onRecharge() }
                         PowerStatus.AuthenticationRequired -> onLogin()
-                        else -> Unit
+                        else -> { haptics.soft(); onRecharge() }
                     }
-                }, enabled = status != PowerStatus.Loading)
+                }, enabled = status != PowerStatus.Loading || model.snapshot != null)
             }
             if (records.isEmpty()) {
                 EmptyRecords(status, onLogin, model::refresh)

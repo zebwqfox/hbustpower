@@ -8,7 +8,7 @@ Native iOS and Android apps for checking your dorm's electricity balance at Hube
 
 [![Platforms](https://img.shields.io/badge/platforms-iOS%2026%2B%20%7C%20Android%206%2B-2563EB)](#requirements)
 [![Languages](https://img.shields.io/badge/Swift%20%7C%20Kotlin-native-F05138)](#requirements)
-[![Tests](https://img.shields.io/badge/tests-71-2EA043)](#testing)
+[![Tests](https://img.shields.io/badge/tests-73-2EA043)](#testing)
 
 <img src="docs/screenshots/home-light.png" width="250" alt="Home screen" />
 <img src="docs/screenshots/home-dark.png" width="250" alt="Dark mode" />
@@ -210,7 +210,7 @@ xcodebuild test -project HBUSTPowerIOS.xcodeproj -scheme '湖科电量' \
   -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
-The iOS suite has 27 XCTest methods. Android has 44 JVM unit tests and passes Android Lint. Both clients cover
+The iOS suite has 28 XCTest methods. Android has 45 JVM unit tests and passes Android Lint. Both clients cover
 the fragile parts, including HTML parsing, redirect validation, usage estimates, recharge planning, and changelog
 consistency.
 

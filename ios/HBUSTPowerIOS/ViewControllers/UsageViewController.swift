@@ -5,8 +5,10 @@ final class UsageViewController: ModelViewController {
     private let stack = UIStackView()
     private let chart = UsageChartView()
     private var adaptiveRows: [UIStackView] = []
+    private let totalLegend = PowerActionButton(type: .system)
     private let lightingLegend = PowerActionButton(type: .system)
     private let acLegend = PowerActionButton(type: .system)
+    private var selectedSeries: UsageSeries = .total
     private let selectedDayLabel = UILabel.powerLabel("轻点或横向滑动图表，查看当天用量", style: .subheadline, color: PowerTheme.accent)
     private let clearSelectionButton = PowerTheme.button("查看整周", image: "arrow.uturn.backward")
     private var hasRevealed = false
@@ -29,7 +31,7 @@ final class UsageViewController: ModelViewController {
         view.backgroundColor = PowerTheme.background
         installBackdrop()
         installRefreshButton()
-        configureLegendButtons()
+        configureSeriesButtons()
         configureLayout()
         chart.selectionChanged = { [weak self] point in self?.updateSelectedDay(point) }
         updateAdaptiveLayout()
@@ -56,17 +58,13 @@ final class UsageViewController: ModelViewController {
     }
 
     func focus(on kind: String) {
-        lightingLegend.isSelected = kind == "照明"
-        acLegend.isSelected = kind == "空调"
-        chart.showsLighting = lightingLegend.isSelected
-        chart.showsAirConditioning = acLegend.isSelected
-        chart.clearSelection()
-        updateLegendAppearance()
+        let series: UsageSeries = kind == "照明" ? .lighting : .airConditioning
+        selectSeries(series, feedback: false)
     }
 
     private func updateSelectedDay(_ point: DailyUsagePoint?) {
         if let point {
-            selectedDayLabel.text = String(format: "%@ · 合计 %.2f 度\n照明 %.2f 度   空调 %.2f 度", point.date.formatted(.dateTime.month().day()), point.total, point.lighting, point.airConditioning)
+            selectedDayLabel.text = String(format: "%@ · %@ %.2f 度", point.date.formatted(.dateTime.month().day()), selectedSeries.title, selectedSeries.value(for: point))
         } else {
             selectedDayLabel.text = "轻点或横向滑动图表，查看当天用量"
         }
@@ -238,15 +236,15 @@ final class UsageViewController: ModelViewController {
         stack.addArrangedSubview(statusLabel)
     }
 
-    private func configureLegendButtons() {
-        configureLegend(lightingLegend, title: "照明", color: PowerTheme.lighting, action: #selector(lightingLegendTapped))
-        configureLegend(acLegend, title: "空调", color: PowerTheme.cooling, action: #selector(acLegendTapped))
-        lightingLegend.isSelected = true
-        acLegend.isSelected = true
-        updateLegendAppearance()
+    private func configureSeriesButtons() {
+        configureSeriesButton(totalLegend, title: "总量", color: PowerTheme.accent, action: #selector(totalLegendTapped))
+        configureSeriesButton(lightingLegend, title: "照明", color: PowerTheme.lighting, action: #selector(lightingLegendTapped))
+        configureSeriesButton(acLegend, title: "空调", color: PowerTheme.cooling, action: #selector(acLegendTapped))
+        chart.series = selectedSeries
+        updateSeriesAppearance()
     }
 
-    private func configureLegend(_ button: UIButton, title: String, color: UIColor, action: Selector) {
+    private func configureSeriesButton(_ button: UIButton, title: String, color: UIColor, action: Selector) {
         var configuration = UIButton.Configuration.glass()
         configuration.title = title
         configuration.image = UIImage(systemName: "circle.fill")
@@ -263,41 +261,53 @@ final class UsageViewController: ModelViewController {
             return attributes
         }
         button.addTarget(self, action: action, for: .touchUpInside)
-        button.accessibilityHint = "轻点切换该系列并重新缩放图表"
+        button.accessibilityHint = "轻点显示\(title)用量"
     }
 
     private func chartHeader() -> UIView {
         let title = UILabel.powerLabel("近 7 日用量", style: .headline, weight: .bold)
-        let legend = UIStackView(arrangedSubviews: [lightingLegend, acLegend])
-        legend.spacing = 10
+        let legend = UIStackView(arrangedSubviews: [totalLegend, lightingLegend, acLegend])
+        legend.spacing = 6
+        legend.distribution = .fillEqually
         let row = UIStackView(arrangedSubviews: [title, legend])
         row.axis = .vertical
-        row.alignment = .leading
-        row.spacing = 4
+        row.alignment = .fill
+        row.spacing = 8
         return row
     }
 
-    private func updateLegendAppearance() {
-        lightingLegend.configuration?.baseForegroundColor = lightingLegend.isSelected ? PowerTheme.lighting : .secondaryLabel
-        acLegend.configuration?.baseForegroundColor = acLegend.isSelected ? PowerTheme.cooling : .secondaryLabel
-        lightingLegend.accessibilityValue = lightingLegend.isSelected ? "已显示" : "已隐藏"
-        acLegend.accessibilityValue = acLegend.isSelected ? "已显示" : "已隐藏"
+    private func updateSeriesAppearance() {
+        let options: [(UIButton, UsageSeries, UIColor)] = [
+            (totalLegend, .total, PowerTheme.accent),
+            (lightingLegend, .lighting, PowerTheme.lighting),
+            (acLegend, .airConditioning, PowerTheme.cooling)
+        ]
+        for (button, series, color) in options {
+            let isSelected = selectedSeries == series
+            button.isSelected = isSelected
+            button.configuration?.baseForegroundColor = isSelected ? color : .secondaryLabel
+            button.configuration?.baseBackgroundColor = isSelected ? color : .clear
+            button.accessibilityValue = isSelected ? "已选择" : "未选择"
+        }
     }
 
+    @objc private func totalLegendTapped() { selectSeries(.total) }
+
     @objc private func lightingLegendTapped() {
-        guard !lightingLegend.isSelected || acLegend.isSelected else { return }
-        lightingLegend.isSelected.toggle()
-        chart.showsLighting = lightingLegend.isSelected
-        updateLegendAppearance()
-        UISelectionFeedbackGenerator().selectionChanged()
+        selectSeries(.lighting)
     }
 
     @objc private func acLegendTapped() {
-        guard !acLegend.isSelected || lightingLegend.isSelected else { return }
-        acLegend.isSelected.toggle()
-        chart.showsAirConditioning = acLegend.isSelected
-        updateLegendAppearance()
-        UISelectionFeedbackGenerator().selectionChanged()
+        selectSeries(.airConditioning)
+    }
+
+    private func selectSeries(_ series: UsageSeries, feedback: Bool = true) {
+        guard selectedSeries != series else { return }
+        selectedSeries = series
+        chart.series = series
+        chart.clearSelection()
+        updateSeriesAppearance()
+        if feedback { UISelectionFeedbackGenerator().selectionChanged() }
     }
 
     private func updateTotalCardTitles(periodName: String) {

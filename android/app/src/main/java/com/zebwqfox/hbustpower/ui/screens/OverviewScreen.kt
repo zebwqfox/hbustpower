@@ -177,7 +177,7 @@ private fun Dashboard(
             Row(Modifier.reveal(1), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 PowerButton(
                     "电费充值", onRecharge, icon = Icons.Filled.Add, primary = true,
-                    enabled = model.status == PowerStatus.Ready, modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f),
                 )
                 PowerButton("算一算", { planning = true }, icon = Icons.Filled.Calculate, modifier = Modifier.weight(0.62f))
             }

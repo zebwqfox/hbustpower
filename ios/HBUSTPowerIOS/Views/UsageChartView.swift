@@ -8,6 +8,28 @@ struct DailyUsagePoint: Hashable {
     var total: Double { lighting + airConditioning }
 }
 
+enum UsageSeries: CaseIterable {
+    case total
+    case lighting
+    case airConditioning
+
+    var title: String {
+        switch self {
+        case .total: "总量"
+        case .lighting: "照明"
+        case .airConditioning: "空调"
+        }
+    }
+
+    func value(for point: DailyUsagePoint) -> Double {
+        switch self {
+        case .total: point.total
+        case .lighting: point.lighting
+        case .airConditioning: point.airConditioning
+        }
+    }
+}
+
 final class UsageChartView: UIView, UIGestureRecognizerDelegate {
     private(set) var selectedIndex: Int?
     var selectionChanged: ((DailyUsagePoint?) -> Void)?
@@ -23,8 +45,12 @@ final class UsageChartView: UIView, UIGestureRecognizerDelegate {
             setNeedsDisplay()
         }
     }
-    var showsLighting = true { didSet { seriesVisibilityChanged() } }
-    var showsAirConditioning = true { didSet { seriesVisibilityChanged() } }
+    var series: UsageSeries = .total {
+        didSet {
+            guard series != oldValue else { return }
+            seriesChanged()
+        }
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -33,7 +59,7 @@ final class UsageChartView: UIView, UIGestureRecognizerDelegate {
         // Redraw instead of stretching when a folding phone opens or closes.
         contentMode = .redraw
         isAccessibilityElement = true
-        accessibilityLabel = "照明和空调用量图表"
+        accessibilityLabel = "总量用量图表"
         accessibilityTraits = .adjustable
         accessibilityHint = "上下轻扫选择日期，或轻点、横向拖动图表查看当天用量"
         addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(chartTapped(_:))))
@@ -52,12 +78,7 @@ final class UsageChartView: UIView, UIGestureRecognizerDelegate {
             return
         }
 
-        let visibleValues = points.flatMap { point -> [Double] in
-            var values: [Double] = []
-            if showsLighting { values.append(point.lighting) }
-            if showsAirConditioning { values.append(point.airConditioning) }
-            return values
-        }
+        let visibleValues = points.map { series.value(for: $0) }
         let rawMaximum = max(1, visibleValues.max() ?? 1)
         let scaleMaximum = niceScaleMaximum(rawMaximum)
         let plot = plotRect
@@ -83,8 +104,12 @@ final class UsageChartView: UIView, UIGestureRecognizerDelegate {
         }
 
         let groupWidth = plot.width / CGFloat(points.count)
-        let visibleCount = (showsLighting ? 1 : 0) + (showsAirConditioning ? 1 : 0)
-        let barWidth = min(14, groupWidth * (visibleCount == 1 ? 0.34 : 0.22))
+        let barWidth = min(14, groupWidth * 0.34)
+        let barColor: UIColor = switch series {
+        case .total: PowerTheme.accent
+        case .lighting: PowerTheme.lighting
+        case .airConditioning: PowerTheme.cooling
+        }
         let formatter = DateFormatter()
         formatter.dateFormat = "M/d"
         let dateAttributes: [NSAttributedString.Key: Any] = [
@@ -99,14 +124,7 @@ final class UsageChartView: UIView, UIGestureRecognizerDelegate {
                 UIBezierPath(roundedRect: CGRect(x: center - groupWidth / 2 + 1, y: plot.minY, width: groupWidth - 2, height: plot.height), cornerRadius: 9).fill()
             }
             let emphasis: CGFloat = selectedIndex == nil || selectedIndex == index ? 1 : 0.35
-            if showsLighting && showsAirConditioning {
-                drawBar(value: point.lighting, maximum: scaleMaximum, x: center - barWidth - 2, width: barWidth, plot: plot, color: PowerTheme.lighting.withAlphaComponent(emphasis))
-                drawBar(value: point.airConditioning, maximum: scaleMaximum, x: center + 2, width: barWidth, plot: plot, color: PowerTheme.cooling.withAlphaComponent(emphasis))
-            } else if showsLighting {
-                drawBar(value: point.lighting, maximum: scaleMaximum, x: center - barWidth / 2, width: barWidth, plot: plot, color: PowerTheme.lighting.withAlphaComponent(emphasis))
-            } else if showsAirConditioning {
-                drawBar(value: point.airConditioning, maximum: scaleMaximum, x: center - barWidth / 2, width: barWidth, plot: plot, color: PowerTheme.cooling.withAlphaComponent(emphasis))
-            }
+            drawBar(value: series.value(for: point), maximum: scaleMaximum, x: center - barWidth / 2, width: barWidth, plot: plot, color: barColor.withAlphaComponent(emphasis))
 
             let text = (Calendar.current.isDateInToday(point.date) ? "今天" : formatter.string(from: point.date)) as NSString
             let size = text.size(withAttributes: dateAttributes)
@@ -191,8 +209,9 @@ final class UsageChartView: UIView, UIGestureRecognizerDelegate {
         text.draw(at: CGPoint(x: rect.midX - size.width / 2, y: rect.midY - size.height / 2), withAttributes: attributes)
     }
 
-    private func seriesVisibilityChanged() {
+    private func seriesChanged() {
         updateAccessibility()
+        accessibilityLabel = "\(series.title)用量图表"
         if UIAccessibility.isReduceMotionEnabled {
             setNeedsDisplay()
         } else {
@@ -204,16 +223,12 @@ final class UsageChartView: UIView, UIGestureRecognizerDelegate {
     }
 
     private func updateAccessibility() {
-        let lighting = points.map(\.lighting).reduce(0, +)
-        let ac = points.map(\.airConditioning).reduce(0, +)
-        var visible: [String] = []
-        if showsLighting { visible.append("照明") }
-        if showsAirConditioning { visible.append("空调") }
+        let total = points.map { series.value(for: $0) }.reduce(0, +)
         if let selectedIndex, points.indices.contains(selectedIndex) {
             let point = points[selectedIndex]
-            accessibilityValue = String(format: "%@，照明 %.2f 度，空调 %.2f 度，合计 %.2f 度", point.date.formatted(date: .abbreviated, time: .omitted), point.lighting, point.airConditioning, point.total)
+            accessibilityValue = String(format: "%@，%@ %.2f 度", point.date.formatted(date: .abbreviated, time: .omitted), series.title, series.value(for: point))
         } else {
-            accessibilityValue = String(format: "当前显示%@，照明合计 %.2f 度，空调合计 %.2f 度", visible.joined(separator: "和"), lighting, ac)
+            accessibilityValue = String(format: "当前显示%@，近 7 日合计 %.2f 度", series.title, total)
         }
     }
 }

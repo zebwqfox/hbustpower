@@ -59,14 +59,14 @@ enum DesignVerification {
             precondition(root.selectedIndex == 1)
             let usage = visibleController()
             let chart = descendants(usage.view).compactMap { $0 as? UsageChartView }.first!
-            precondition(chart.showsLighting && !chart.showsAirConditioning)
+            precondition(chart.series == .lighting)
             await pause(1)
             for index in [1, 3, 5] {
                 chart.selectDay(at: index)
                 precondition(chart.selectedIndex == index)
                 await pause(0.6)
             }
-            let dayReadout = descendants(usage.view).compactMap { $0 as? UILabel }.first { $0.text?.contains("合计") == true && $0.text?.contains("照明") == true }
+            let dayReadout = descendants(usage.view).compactMap { $0 as? UILabel }.first { $0.text?.contains("照明") == true && $0.text?.contains("度") == true }
             precondition(dayReadout != nil, "Chart selection must update the daily readout")
             chart.clearSelection()
             precondition(chart.selectedIndex == nil)

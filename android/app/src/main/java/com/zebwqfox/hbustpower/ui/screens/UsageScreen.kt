@@ -1,8 +1,6 @@
 package com.zebwqfox.hbustpower.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -112,6 +110,19 @@ object UsageChartScale {
     }
 }
 
+/** The single series shown by the usage chart and its three-option selector. */
+enum class UsageSeries(val label: String) {
+    TOTAL("总量"),
+    LIGHTING("照明"),
+    AIR_CONDITIONING("空调");
+
+    fun value(point: DailyUsagePoint): Double = when (this) {
+        TOTAL -> point.lighting + point.airConditioning
+        LIGHTING -> point.lighting
+        AIR_CONDITIONING -> point.airConditioning
+    }
+}
+
 /** Week figures shown under the chart; previous week only counts when it has as many recorded days. */
 data class UsageWeek(val current: List<DailyUsagePoint>, val previous: List<DailyUsagePoint>) {
     val lighting = current.sumOf { it.lighting }
@@ -137,13 +148,11 @@ data class UsageWeek(val current: List<DailyUsagePoint>, val previous: List<Dail
 fun UsageScreen(model: PowerViewModel, focus: MeterKind?, focusToken: Int) {
     val colors = Power.colors
     val haptics = rememberHaptics()
-    var showLighting by rememberSaveable { mutableStateOf(true) }
-    var showAir by rememberSaveable { mutableStateOf(true) }
+    var series by rememberSaveable { mutableStateOf(UsageSeries.TOTAL) }
     var selected by rememberSaveable { mutableIntStateOf(-1) }
     LaunchedEffect(focusToken) {
         if (focus != null) {
-            showLighting = focus == MeterKind.LIGHTING
-            showAir = focus == MeterKind.AIR_CONDITIONING
+            series = if (focus == MeterKind.LIGHTING) UsageSeries.LIGHTING else UsageSeries.AIR_CONDITIONING
             selected = -1
         }
     }
@@ -160,24 +169,35 @@ fun UsageScreen(model: PowerViewModel, focus: MeterKind?, focusToken: Int) {
             PowerCard(Modifier.reveal(0), shape = RoundedCornerShape(24.dp), padding = PaddingValues(start = 14.dp, end = 14.dp, top = 16.dp, bottom = 13.dp)) {
                 Text("近 7 日用量", fontSize = 17.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    LegendPill("照明", colors.lighting, showLighting) {
-                        if (!showLighting || showAir) { showLighting = !showLighting; haptics.selection() }
-                    }
-                    LegendPill("空调", colors.cooling, showAir) {
-                        if (!showAir || showLighting) { showAir = !showAir; haptics.selection() }
+                Row(
+                    Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+                        .background(colors.background.copy(alpha = 0.72f)).padding(3.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    UsageSeries.entries.forEach { option ->
+                        val color = when (option) {
+                            UsageSeries.TOTAL -> colors.accent
+                            UsageSeries.LIGHTING -> colors.lighting
+                            UsageSeries.AIR_CONDITIONING -> colors.cooling
+                        }
+                        UsageSeriesTab(option.label, color, series == option, Modifier.weight(1f)) {
+                            if (series != option) {
+                                series = option
+                                selected = -1
+                                haptics.selection()
+                            }
+                        }
                     }
                 }
                 Spacer(Modifier.height(10.dp))
-                UsageChart(points, showLighting, showAir, selected.takeIf { it >= 0 }) {
+                UsageChart(points, series, selected.takeIf { it >= 0 }) {
                     if (it != selected) { selected = it; haptics.selection() }
                 }
                 Spacer(Modifier.height(10.dp))
                 val point = points.getOrNull(selected)
                 Text(
-                    point?.let {
-                        String.format(Locale.ROOT, "%s · 合计 %.2f 度\n照明 %.2f 度   空调 %.2f 度", formatMonthDay(it.day), it.lighting + it.airConditioning, it.lighting, it.airConditioning)
-                    } ?: "轻点或横向滑动图表，查看当天用量",
+                    point?.let { String.format(Locale.ROOT, "%s · %s %.2f 度", formatMonthDay(it.day), series.label, series.value(it)) }
+                        ?: "轻点或横向滑动图表，查看当天用量",
                     color = colors.accent, fontSize = 15.sp,
                 )
                 AnimatedVisibility(point != null) {
@@ -306,17 +326,18 @@ private fun InsightLine(icon: ImageVector, title: String, value: String, valueCo
 }
 
 @Composable
-private fun LegendPill(label: String, color: Color, selected: Boolean, onClick: () -> Unit) {
+private fun UsageSeriesTab(label: String, color: Color, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val colors = Power.colors
-    val shape = CircleShape
+    val shape = RoundedCornerShape(13.dp)
     Row(
-        Modifier
+        modifier
             .clip(shape)
-            .background(colors.surface.copy(alpha = 0.9f))
-            .border(0.8.dp, (if (selected) color else colors.separator).copy(alpha = if (selected) 0.35f else 1f), shape)
-            .pressable(onClick = onClick, pressedScale = 0.965f, onClickLabel = "切换该系列并重新缩放图表")
-            .semantics { stateDescription = if (selected) "已显示" else "已隐藏" }
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .background(if (selected) color.copy(alpha = 0.14f) else Color.Transparent)
+            .border(0.8.dp, if (selected) color.copy(alpha = 0.38f) else Color.Transparent, shape)
+            .pressable(onClick = onClick, pressedScale = 0.965f, onClickLabel = "显示${label}用量")
+            .semantics { stateDescription = if (selected) "已选择" else "未选择" }
+            .padding(horizontal = 8.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(8.dp).clip(CircleShape).background(if (selected) color else colors.tertiaryText))
@@ -328,24 +349,18 @@ private fun LegendPill(label: String, color: Color, selected: Boolean, onClick: 
 @Composable
 private fun UsageChart(
     points: List<DailyUsagePoint>,
-    showLighting: Boolean,
-    showAir: Boolean,
+    series: UsageSeries,
     selected: Int?,
     onSelect: (Int) -> Unit,
 ) {
     val colors = Power.colors
     val measurer = rememberTextMeasurer()
-    val reduceMotion = Power.reduceMotion
-    val lightingAlpha by animateFloatAsState(if (showLighting) 1f else 0f, tween(if (reduceMotion) 0 else 280), label = "lighting")
-    val airAlpha by animateFloatAsState(if (showAir) 1f else 0f, tween(if (reduceMotion) 0 else 280), label = "air")
     val today = LocalDate.now(ZoneId.of("Asia/Shanghai"))
     val axisStyle = TextStyle(fontSize = 11.sp, color = colors.secondaryText)
-    val lightingTotal = points.sumOf { it.lighting }
-    val airTotal = points.sumOf { it.airConditioning }
-    val visibleNames = listOfNotNull("照明".takeIf { showLighting }, "空调".takeIf { showAir }).joinToString("和")
+    val periodTotal = points.sumOf(series::value)
     val description = selected?.let(points::getOrNull)?.let {
-        String.format(Locale.ROOT, "%s，照明 %.2f 度，空调 %.2f 度，合计 %.2f 度", formatMonthDay(it.day), it.lighting, it.airConditioning, it.lighting + it.airConditioning)
-    } ?: String.format(Locale.ROOT, "当前显示%s，照明合计 %.2f 度，空调合计 %.2f 度", visibleNames, lightingTotal, airTotal)
+        String.format(Locale.ROOT, "%s，%s %.2f 度", formatMonthDay(it.day), series.label, series.value(it))
+    } ?: String.format(Locale.ROOT, "当前显示%s，近 7 日合计 %.2f 度", series.label, periodTotal)
 
     Canvas(
         Modifier
@@ -353,7 +368,7 @@ private fun UsageChart(
             // Keyed on size inputs so folding or resizing redraws instead of stretching.
             .height(LocalPowerLayout.current.chartHeight)
             .semantics {
-                contentDescription = "照明和空调用量图表"
+                contentDescription = "${series.label}用量图表"
                 stateDescription = description
                 customActions = listOf(
                     CustomAccessibilityAction("后一天") { if (points.isNotEmpty()) onSelect(minOf(points.lastIndex, (selected ?: -1) + 1)); true },
@@ -401,7 +416,7 @@ private fun UsageChart(
             drawText(layout, topLeft = Offset((size.width - layout.size.width) / 2, (size.height - layout.size.height) / 2))
             return@Canvas
         }
-        val visible = points.flatMap { listOfNotNull(it.lighting.takeIf { showLighting }, it.airConditioning.takeIf { showAir }) }
+        val visible = points.map(series::value)
         val maximum = UsageChartScale.niceMaximum(visible.maxOrNull() ?: 1.0)
         val plotLeft = 36.dp.toPx()
         val plotTop = 8.dp.toPx()
@@ -415,13 +430,16 @@ private fun UsageChart(
             drawText(label, topLeft = Offset(plotLeft - label.size.width - 7.dp.toPx(), y - label.size.height / 2f))
         }
         val group = plotWidth / points.size
-        val visibleCount = (if (showLighting) 1 else 0) + (if (showAir) 1 else 0)
-        val barWidth = minOf(14.dp.toPx(), group * if (visibleCount == 1) 0.34f else 0.22f)
-        fun bar(value: Double, x: Float, color: Color, alpha: Float) {
-            if (alpha <= 0f) return
+        val barWidth = minOf(14.dp.toPx(), group * 0.34f)
+        val barColor = when (series) {
+            UsageSeries.TOTAL -> colors.accent
+            UsageSeries.LIGHTING -> colors.lighting
+            UsageSeries.AIR_CONDITIONING -> colors.cooling
+        }
+        fun bar(value: Double, x: Float, color: Color) {
             val height = maxOf(if (value > 0) 4.dp.toPx() else 0f, (plotHeight * (value / maximum)).toFloat())
             drawRoundRect(
-                color.copy(alpha = color.alpha * alpha), Offset(x, plotBottom - height), Size(barWidth, height),
+                color, Offset(x, plotBottom - height), Size(barWidth, height),
                 CornerRadius(minOf(barWidth / 2, 5.dp.toPx())),
             )
         }
@@ -431,14 +449,7 @@ private fun UsageChart(
                 drawRoundRect(colors.accent.copy(alpha = 0.09f), Offset(center - group / 2 + 1, plotTop), Size(group - 2, plotHeight), CornerRadius(9.dp.toPx()))
             }
             val emphasis = if (selected == null || selected == index) 1f else 0.35f
-            if (showLighting && showAir) {
-                bar(point.lighting, center - barWidth - 2.dp.toPx(), colors.lighting.copy(alpha = emphasis), lightingAlpha)
-                bar(point.airConditioning, center + 2.dp.toPx(), colors.cooling.copy(alpha = emphasis), airAlpha)
-            } else if (showLighting) {
-                bar(point.lighting, center - barWidth / 2, colors.lighting.copy(alpha = emphasis), lightingAlpha)
-            } else {
-                bar(point.airConditioning, center - barWidth / 2, colors.cooling.copy(alpha = emphasis), airAlpha)
-            }
+            bar(series.value(point), center - barWidth / 2, barColor.copy(alpha = emphasis))
             val text = if (point.day == today) "今天" else "${point.day.monthValue}/${point.day.dayOfMonth}"
             val label = measurer.measure(text, axisStyle)
             if (label.size.width < group - 2 || index == 0 || index == points.lastIndex || (index % 2 == 0 && index < points.size - 2)) {

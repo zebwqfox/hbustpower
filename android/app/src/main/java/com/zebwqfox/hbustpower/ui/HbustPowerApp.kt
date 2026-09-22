@@ -244,7 +244,9 @@ private fun MainShell(model: PowerViewModel) {
         select(MainTab.USAGE.ordinal)
     }
     fun openRecharge() {
-        if (model.status == PowerStatus.Ready) overlay = "recharge"
+        // A refresh can temporarily move a valid session out of Ready. The recharge page uses the
+        // shared WebView cookies directly, so do not turn a tap into a silent no-op during that window.
+        overlay = "recharge"
     }
     val openLogin = { overlay = "login" }
 

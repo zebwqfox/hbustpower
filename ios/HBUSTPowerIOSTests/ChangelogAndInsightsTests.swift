@@ -37,6 +37,13 @@ final class UsageInsightsTests: XCTestCase {
                                    usageRecords: records, rechargeRecords: recharges, fetchedAt: .now)
     }
 
+    func testUsageSelectorShowsOneRequestedSeries() {
+        let point = DailyUsagePoint(date: .now, lighting: 2.5, airConditioning: 7.5)
+        XCTAssertEqual(UsageSeries.total.value(for: point), 10)
+        XCTAssertEqual(UsageSeries.lighting.value(for: point), 2.5)
+        XCTAssertEqual(UsageSeries.airConditioning.value(for: point), 7.5)
+    }
+
     func testWeekComparisonReportsSaving() {
         let days = Array(repeating: (lighting: 5.0, ac: 15.0), count: 7) + Array(repeating: (lighting: 4.0, ac: 12.0), count: 7)
         let week = UsageInsights.make(from: snapshot(daily: days), calendar: calendar).first { $0.id == "week" }

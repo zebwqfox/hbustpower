@@ -11,6 +11,15 @@ object Changelog {
     val latest: Release get() = releases.first()
 
     val releases: List<Release> = listOf(
+        Release("1.9.2", "用量切换更清楚", "总量、照明、空调分开看，充值入口也更顺畅。", listOf(
+            Section("改进", listOf(
+                "近 7 日图表改为“总量 / 照明 / 空调”三段切换，一次只显示一组柱形",
+                "从首页点照明或空调卡片进入用量页时，直接选中对应项目",
+            )),
+            Section("修复", listOf(
+                "修复已有数据刷新时，点击“电费充值”可能没有反应的问题",
+            )),
+        )),
         Release("1.9.1", "登录页更清爽", "移除演示入口，直接连接学校数据。", listOf(
             Section("调整", listOf(
                 "移除示例数据入口和相关设置",

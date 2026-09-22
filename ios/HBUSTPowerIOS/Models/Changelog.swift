@@ -17,6 +17,12 @@ enum Changelog {
     static var latest: Release { releases[0] }
 
     static let releases: [Release] = [
+        Release(version: "1.10.1", title: "用量切换更清楚", summary: "总量、照明、空调分开看。", sections: [
+            Section(title: "改进", items: [
+                "近 7 日图表改为“总量 / 照明 / 空调”三段切换，一次只显示一组柱形",
+                "从首页点照明或空调卡片进入用量页时，直接选中对应项目"
+            ])
+        ]),
         Release(version: "1.10.0", title: "桌面小组件", summary: "不打开应用也能看见还剩多少电。", sections: [
             Section(title: "新增", items: [
                 "桌面小组件：小号显示宿舍、剩余电量和一条电量进度条；中号再加上照明、空调日均和最近 7 天的柱状图",

@@ -1,10 +1,12 @@
 package com.zebwqfox.hbustpower.ui
 
 import com.zebwqfox.hbustpower.model.ElectricitySnapshot
+import com.zebwqfox.hbustpower.model.DailyUsagePoint
 import com.zebwqfox.hbustpower.model.RechargeRecord
 import com.zebwqfox.hbustpower.model.UsageRecord
 import com.zebwqfox.hbustpower.ui.components.HandDrawn
 import com.zebwqfox.hbustpower.ui.screens.UsageChartScale
+import com.zebwqfox.hbustpower.ui.screens.UsageSeries
 import com.zebwqfox.hbustpower.ui.screens.UsageWeek
 import com.zebwqfox.hbustpower.ui.screens.forecastText
 import com.zebwqfox.hbustpower.ui.screens.sortedRecords
@@ -37,6 +39,13 @@ class ScreenRulesTest {
         assertEquals("0", UsageChartScale.axisLabel(0.0))
         assertEquals("2.5", UsageChartScale.axisLabel(2.5))
         assertEquals("20", UsageChartScale.axisLabel(20.0))
+    }
+
+    @Test fun usageSelectorShowsOneRequestedSeries() {
+        val point = DailyUsagePoint(LocalDate.of(2026, 9, 22), lighting = 2.5, airConditioning = 7.5)
+        assertEquals(10.0, UsageSeries.TOTAL.value(point), 1e-9)
+        assertEquals(2.5, UsageSeries.LIGHTING.value(point), 1e-9)
+        assertEquals(7.5, UsageSeries.AIR_CONDITIONING.value(point), 1e-9)
     }
 
     @Test fun weekComparisonNeedsAsManyPreviousDays() {

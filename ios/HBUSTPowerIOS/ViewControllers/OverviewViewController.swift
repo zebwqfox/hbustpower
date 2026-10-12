@@ -251,14 +251,7 @@ final class OverviewViewController: ModelViewController {
     /// On a half-folded iPhone Duo, put the gap between the two columns exactly over the fold so no card or button
     /// sits on it. Flat devices, one-column layouts and systems without reserved regions keep the even split.
     private func alignColumnsToHinge() {
-        var hinge: CGRect?
-        if #available(iOS 27.1, *), dashboard.axis == .horizontal {
-            hinge = view.reservedRegions(kind: .division)
-                .filter { $0.isActive && $0.frame.height > $0.frame.width }
-                .map { dashboard.convert($0.frame, from: view) }
-                .first { $0.minX > 160 && $0.maxX < dashboard.bounds.width - 160 }
-        }
-        if let hinge {
+        if let hinge = verticalHinge() {
             let aligned = hingeWidth.isActive && dashboard.distribution == .fill
                 && abs(hingeWidth.constant - hinge.minX) < 0.5 && abs(dashboard.spacing - hinge.width) < 0.5
             guard !aligned else { return }
@@ -272,6 +265,20 @@ final class OverviewViewController: ModelViewController {
         }
     }
 
+    /// The vertical fold in dashboard coordinates, if it splits the two columns.
+    /// `reservedRegions` first ships in the iOS 27.1 SDK (UIKit 9127.0.85); Xcode 27.0 builds without it and keeps
+    /// the even split.
+    private func verticalHinge() -> CGRect? {
+        #if canImport(UIKit, _version: 9127.0.85)
+        if #available(iOS 27.1, *), dashboard.axis == .horizontal {
+            return view.reservedRegions(kind: .division)
+                .filter { $0.isActive && $0.frame.height > $0.frame.width }
+                .map { dashboard.convert($0.frame, from: view) }
+                .first { $0.minX > 160 && $0.maxX < dashboard.bounds.width - 160 }
+        }
+        #endif
+        return nil
+    }
 
     private func applyAdaptiveLayout() {
         if hingeWidth.isActive, !PowerLayout.isWide(traitCollection) { hingeWidth.isActive = false }

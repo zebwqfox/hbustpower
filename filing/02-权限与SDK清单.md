@@ -32,7 +32,6 @@
 | Kotlin 标准库与协程 | JetBrains | 随 Kotlin 2.4.10 | 语言运行时 | 无 | https://kotlinlang.org |
 | jsoup | jsoup 开源项目 | 1.21.2 | 解析学校网页 HTML（本地解析，不联网） | 无 | https://jsoup.org |
 | desugar_jdk_libs | Google | 2.1.5 | 旧系统上的日期时间 API 兼容 | 无 | https://developer.android.com/studio/write/java8-support |
-| Backdrop / Shapes | Kyant0（开源） | 2.0.1 / 1.2.1 | 界面材质绘制组件，**当前版本已打包但未启用** | 无 | https://github.com/Kyant0 |
 
 > 以上组件均为本地运行的界面/工具库，不含统计、广告、推送、支付、社交登录类 SDK，不产生自有网络请求。
 

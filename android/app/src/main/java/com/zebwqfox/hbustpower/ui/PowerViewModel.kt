@@ -92,7 +92,6 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
     /** The school entries are built in, exactly as the iOS app ships them. */
     val authUrl: String get() = SchoolEndpoints.AUTH_URL
     val reminderDiagnostic: String get() = reminder.diagnosticStatus
-    val isLowBalance: Boolean get() = snapshot?.let { it.purchasedKWh < lowBalanceThreshold } ?: false
 
     /** Version notice, announcement and feature switches, as last fetched. Empty until the first check. */
     var cloudState by mutableStateOf(CloudConfigState()); private set
@@ -118,7 +117,6 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
     var telemetryEnabled by mutableStateOf(true); private set
     val isTelemetryAvailable: Boolean get() = telemetry.isConfigured
     val telemetryHost: String? get() = TelemetryEndpoint.host
-    val telemetryLastSentAt: Long get() = telemetry.lastSentAt
 
     /** Exactly what a report would contain, so the settings screen can show it instead of describing it. */
     fun telemetryPreview(): List<Pair<String, String>> = telemetry.previewPayload().humanReadable()
@@ -292,7 +290,6 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
         cookies.clearAll()
         WebStorage.getInstance().deleteAllData()
         campusCard.reset(destroyPage = true)
-        settings.saveSummary(null, null, null)
         snapshot = null
         status = PowerStatus.AuthenticationRequired
     }
@@ -356,7 +353,6 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
         finishRefresh("成功")
         snapshot = value
         status = PowerStatus.Ready
-        settings.saveSummary(value.room, value.purchasedKWh, value.fetchedAt.toEpochMilli())
         val threshold = lowBalanceThreshold
         viewModelScope.launch { reminder.evaluate(value.purchasedKWh, threshold, value.room) }
     }

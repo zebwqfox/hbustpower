@@ -119,8 +119,6 @@ dependencies {
     implementation("androidx.compose.material3:material3:1.4.0")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
 
-    implementation("io.github.kyant0:backdrop:2.0.1")
-    implementation("io.github.kyant0:shapes:1.2.1")
     implementation("org.jsoup:jsoup:1.21.2")
 
     debugImplementation("androidx.compose.ui:ui-tooling:1.12.0")

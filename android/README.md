@@ -117,5 +117,5 @@ telemetryUrl=https://hbustelec.imfurry.com/api/v1/report
 
 ## 与早期 Android 版本的差异
 
-- 底部导航改用 Material 3 标准导航栏（宽屏为侧边导航栏），遵循 1.7.1 交接要求“不要自绘底栏”。原 Liquid Glass 底栏代码（`ui/components/LiquidBottom*.kt` 等）保留在工程中但未使用。
-- 不再注册常驻前台服务和开机自启：iOS 没有全天后台轮询，交接要求不以常驻服务绕过用户选择。`background/` 下旧代码未在清单中声明，可按需删除。
+- 底部导航改用 Material 3 标准导航栏（宽屏为侧边导航栏），遵循 1.7.1 交接要求“不要自绘底栏”。原 Liquid Glass 自绘底栏及其依赖的 Backdrop / Shapes 库已删除。
+- 不再注册常驻前台服务和开机自启：iOS 没有全天后台轮询，交接要求不以常驻服务绕过用户选择。原 `background/` 下的旧代码已删除。

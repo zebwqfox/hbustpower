@@ -120,7 +120,6 @@ iOS 版仅在你同意后使用**通知**权限，用于低电量提醒；拒绝
 | UIKit / WidgetKit / WebKit | Apple | 系统框架（iOS），随系统提供 | 否 |
 | Kotlin 标准库与协程 | JetBrains | 语言运行时 | 否 |
 | jsoup | jsoup.org | 解析学校网页的 HTML（Android） | 否 |
-| Backdrop、Shapes | Kyant0（开源） | 界面材质绘制组件（当前版本已打包但未启用） | 否 |
 | desugar_jdk_libs | Google | 兼容旧系统的日期时间 API | 否 |
 
 ## 九、通知

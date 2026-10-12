@@ -64,6 +64,11 @@ class KeystoreCredentialStore(context: Context) : CredentialStore {
 class AppSettings(context: Context) {
     val prefs: SharedPreferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
+    init {
+        // Room and balance kept for a resident notification the app no longer has; don't leave them behind.
+        if (LEGACY_KEYS.any(prefs::contains)) prefs.edit { LEGACY_KEYS.forEach { remove(it) } }
+    }
+
     var lowBalanceThreshold: Double
         get() = prefs.getString(THRESHOLD, null)?.toDoubleOrNull() ?: 20.0
         set(value) {
@@ -94,26 +99,6 @@ class AppSettings(context: Context) {
         get() = prefs.getInt(ROOMMATES, 4).coerceIn(1, 12)
         set(value) = prefs.edit { putInt(ROOMMATES, value.coerceIn(1, 12)) }
 
-    var batteryRequestShown: Boolean
-        get() = prefs.getBoolean(BATTERY_REQUEST_SHOWN, false)
-        set(value) = prefs.edit { putBoolean(BATTERY_REQUEST_SHOWN, value) }
-
-    /** Last shown summary for the resident notification; never holds tokens or cookies. */
-    fun saveSummary(room: String?, balance: Double?, fetchedAtEpochMillis: Long?) = prefs.edit {
-        if (balance == null) {
-            remove(SUMMARY_ROOM); remove(SUMMARY_BALANCE); remove(SUMMARY_TIME)
-        } else {
-            putString(SUMMARY_ROOM, room)
-            putString(SUMMARY_BALANCE, balance.toString())
-            putLong(SUMMARY_TIME, fetchedAtEpochMillis ?: 0L)
-        }
-    }
-
-    fun summary(): Triple<String?, Double, Long>? {
-        val balance = prefs.getString(SUMMARY_BALANCE, null)?.toDoubleOrNull() ?: return null
-        return Triple(prefs.getString(SUMMARY_ROOM, null), balance, prefs.getLong(SUMMARY_TIME, 0L))
-    }
-
     companion object {
         const val PREFS = "hbust_power_prefs"
         private const val THRESHOLD = "low_balance_threshold"
@@ -122,10 +107,9 @@ class AppSettings(context: Context) {
         private const val CONSENT_VERSION = "accepted_consent_version"
         private const val THEME = "theme_style"
         private const val ROOMMATES = "roommates"
-        private const val BATTERY_REQUEST_SHOWN = "battery_optimization_request_shown"
-        private const val SUMMARY_ROOM = "summary_room"
-        private const val SUMMARY_BALANCE = "summary_balance"
-        private const val SUMMARY_TIME = "summary_time"
+        private val LEGACY_KEYS = listOf(
+            "battery_optimization_request_shown", "summary_room", "summary_balance", "summary_time",
+        )
     }
 }
 

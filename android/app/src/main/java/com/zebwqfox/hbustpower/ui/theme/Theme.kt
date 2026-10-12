@@ -71,7 +71,6 @@ private fun palette(style: PowerThemeStyle, dark: Boolean): PowerPalette {
 }
 
 val LightPalette = palette(PowerThemeStyle.CLASSIC, dark = false)
-val DarkPalette = palette(PowerThemeStyle.CLASSIC, dark = true)
 
 val LocalPowerPalette = staticCompositionLocalOf { LightPalette }
 

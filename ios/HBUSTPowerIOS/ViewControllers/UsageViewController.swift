@@ -40,6 +40,9 @@ final class UsageViewController: ModelViewController {
         }
         applyAdaptiveLayout()
         registerForTraitChanges(PowerLayout.traits) { (controller: UsageViewController, _) in controller.applyAdaptiveLayout() }
+        registerForTraitChanges([UITraitUserInterfaceStyle.self, UITraitDisplayScale.self]) { (controller: UsageViewController, _) in
+            controller.updateSeriesAppearance()
+        }
         modelDidChange()
     }
 
@@ -212,6 +215,7 @@ final class UsageViewController: ModelViewController {
         adaptiveRows.append(totals)
 
         let shareCard = PowerCardView(axis: .horizontal, spacing: 14)
+        sharePercentLabel.font = PowerTheme.numberFont(34, weight: .bold, style: .largeTitle)
         sharePercentLabel.setContentHuggingPriority(.required, for: .horizontal)
         let shareText = UIStackView(arrangedSubviews: [
             UILabel.powerLabel("近 7 日用电来自空调", style: .subheadline, weight: .semibold),
@@ -290,8 +294,31 @@ final class UsageViewController: ModelViewController {
             button.isSelected = isSelected
             button.configuration?.baseForegroundColor = isSelected ? color : .secondaryLabel
             button.configuration?.baseBackgroundColor = isSelected ? color : .clear
+            // Unselected chips keep their colour in the dot, so the legend still works as a key for the bars.
+            // Glass buttons draw their own image colour, so the colour is baked into the image.
+            let dot = UIImage(systemName: "circle.fill")
+            button.configuration?.image = isSelected ? dot
+                : series == .total ? stackedDot : dot?.withTintColor(color, renderingMode: .alwaysOriginal)
             button.accessibilityValue = isSelected ? "已选择" : "未选择"
         }
+    }
+
+    /// The 总量 key: air conditioning under lighting, the way its bars are stacked. Drawn for the current traits;
+    /// `updateSeriesAppearance()` runs again when they change.
+    private var stackedDot: UIImage {
+        let size = CGSize(width: 9, height: 9)
+        let traits = traitCollection
+        let format = UIGraphicsImageRendererFormat.preferred()
+        if traits.displayScale > 0 { format.scale = traits.displayScale }
+        return UIGraphicsImageRenderer(size: size, format: format).image { _ in
+            traits.performAsCurrent {
+                UIBezierPath(ovalIn: CGRect(origin: .zero, size: size)).addClip()
+                PowerTheme.cooling.setFill()
+                UIBezierPath(rect: CGRect(origin: .zero, size: size)).fill()
+                PowerTheme.lighting.setFill()
+                UIBezierPath(rect: CGRect(x: 0, y: 0, width: size.width, height: size.height * 0.42)).fill()
+            }
+        }.withRenderingMode(.alwaysOriginal)
     }
 
     @objc private func totalLegendTapped() { selectSeries(.total) }
@@ -332,6 +359,7 @@ final class UsageViewController: ModelViewController {
         header.alignment = .center
         symbol.contentMode = .scaleAspectFit
         symbol.preferredSymbolConfiguration = .init(pointSize: 18, weight: .medium)
+        label.font = PowerTheme.numberFont(22, weight: .bold, style: .title2)
         label.adjustsFontSizeToFitWidth = true
         label.minimumScaleFactor = 0.7
         card.stack.addArrangedSubview(header)

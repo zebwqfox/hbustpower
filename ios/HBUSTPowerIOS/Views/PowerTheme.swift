@@ -18,6 +18,21 @@ enum PowerTheme {
         UIFontMetrics(forTextStyle: style).scaledFont(for: .systemFont(ofSize: size, weight: weight))
     }
 
+    /// Figures speak in SF Rounded, matching the capsules and doodles around them. Tabular digits keep a number
+    /// that is counting from shifting sideways.
+    static func numberFont(_ size: CGFloat, weight: UIFont.Weight, style: UIFont.TextStyle, tabular: Bool = false,
+                           compatibleWith traits: UITraitCollection? = nil) -> UIFont {
+        var descriptor = UIFont.systemFont(ofSize: size, weight: weight).fontDescriptor
+        descriptor = descriptor.withDesign(.rounded) ?? descriptor
+        if tabular {
+            descriptor = descriptor.addingAttributes([.featureSettings: [[
+                UIFontDescriptor.FeatureKey.type: kNumberSpacingType,
+                UIFontDescriptor.FeatureKey.selector: kMonospacedNumbersSelector
+            ]]])
+        }
+        return UIFontMetrics(forTextStyle: style).scaledFont(for: UIFont(descriptor: descriptor, size: size), compatibleWith: traits)
+    }
+
     static func button(_ title: String, image: String? = nil, primary: Bool = false) -> UIButton {
         var configuration = primary ? UIButton.Configuration.prominentGlass() : UIButton.Configuration.glass()
         configuration.title = title

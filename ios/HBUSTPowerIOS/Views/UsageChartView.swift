@@ -82,10 +82,26 @@ final class UsageChartView: UIView, UIGestureRecognizerDelegate {
         let rawMaximum = max(1, visibleValues.max() ?? 1)
         let scaleMaximum = niceScaleMaximum(rawMaximum)
         let plot = plotRect
+        let barColor: UIColor = switch series {
+        case .total: PowerTheme.accent
+        case .lighting: PowerTheme.lighting
+        case .airConditioning: PowerTheme.cooling
+        }
+        let axisSize = min(15, UIFont.preferredFont(forTextStyle: .caption2).pointSize)
         let gridAttributes: [NSAttributedString.Key: Any] = [
-            .font: UIFont.monospacedDigitSystemFont(ofSize: min(15, UIFont.preferredFont(forTextStyle: .caption2).pointSize), weight: .regular),
+            .font: UIFont.monospacedDigitSystemFont(ofSize: axisSize, weight: .regular),
             .foregroundColor: UIColor.secondaryLabel
         ]
+        // The daily average gets a dashed line and its own label on the axis, in the series colour.
+        let average = visibleValues.reduce(0, +) / Double(visibleValues.count)
+        let showsAverage = points.count > 1 && average > 0
+        let averageY = plot.maxY - plot.height * CGFloat(average / scaleMaximum)
+        let averageText = (average >= 100 ? String(format: "%.0f", average) : String(format: "%.1f", average)) as NSString
+        let averageAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.monospacedDigitSystemFont(ofSize: axisSize, weight: .semibold),
+            .foregroundColor: barColor
+        ]
+        let averageSize = averageText.size(withAttributes: averageAttributes)
 
         for index in 0...3 {
             let ratio = CGFloat(index) / 3
@@ -97,6 +113,7 @@ final class UsageChartView: UIView, UIGestureRecognizerDelegate {
             line.lineWidth = 0.5
             line.stroke()
 
+            guard !showsAverage || abs(y - averageY) >= averageSize.height else { continue }
             let value = scaleMaximum * Double(index) / 3
             let text = formatAxisValue(value) as NSString
             let size = text.size(withAttributes: gridAttributes)
@@ -105,11 +122,6 @@ final class UsageChartView: UIView, UIGestureRecognizerDelegate {
 
         let groupWidth = plot.width / CGFloat(points.count)
         let barWidth = min(14, groupWidth * 0.34)
-        let barColor: UIColor = switch series {
-        case .total: PowerTheme.accent
-        case .lighting: PowerTheme.lighting
-        case .airConditioning: PowerTheme.cooling
-        }
         let formatter = DateFormatter()
         formatter.dateFormat = "M/d"
         let dateAttributes: [NSAttributedString.Key: Any] = [
@@ -124,13 +136,31 @@ final class UsageChartView: UIView, UIGestureRecognizerDelegate {
                 UIBezierPath(roundedRect: CGRect(x: center - groupWidth / 2 + 1, y: plot.minY, width: groupWidth - 2, height: plot.height), cornerRadius: 9).fill()
             }
             let emphasis: CGFloat = selectedIndex == nil || selectedIndex == index ? 1 : 0.35
-            drawBar(value: series.value(for: point), maximum: scaleMaximum, x: center - barWidth / 2, width: barWidth, plot: plot, color: barColor.withAlphaComponent(emphasis))
+            // 总量 shows what the total is made of: air conditioning at the base, lighting on top.
+            let segments: [(value: Double, color: UIColor)] = series == .total
+                ? [(point.airConditioning, PowerTheme.cooling), (point.lighting, PowerTheme.lighting)]
+                : [(series.value(for: point), barColor)]
+            let isToday = Calendar.current.isDateInToday(point.date)
+            drawBar(segments, maximum: scaleMaximum, x: center - barWidth / 2, width: barWidth, plot: plot,
+                    emphasis: emphasis, outline: isToday ? barColor : nil)
 
-            let text = (Calendar.current.isDateInToday(point.date) ? "今天" : formatter.string(from: point.date)) as NSString
+            let text = (isToday ? "今天" : formatter.string(from: point.date)) as NSString
             let size = text.size(withAttributes: dateAttributes)
             if size.width < groupWidth - 2 || index == 0 || index == points.count - 1 || (index % 2 == 0 && index < points.count - 2) {
                 text.draw(at: CGPoint(x: center - size.width / 2, y: plot.maxY + 9), withAttributes: dateAttributes)
             }
+        }
+
+        if showsAverage {
+            let line = UIBezierPath()
+            line.move(to: CGPoint(x: plot.minX, y: averageY))
+            line.addLine(to: CGPoint(x: plot.maxX, y: averageY))
+            line.lineWidth = 1
+            line.setLineDash([3, 3], count: 2, phase: 0)
+            barColor.withAlphaComponent(0.6).setStroke()
+            line.stroke()
+            averageText.draw(at: CGPoint(x: max(0, plot.minX - averageSize.width - 7), y: averageY - averageSize.height / 2),
+                             withAttributes: averageAttributes)
         }
     }
 
@@ -191,12 +221,31 @@ final class UsageChartView: UIView, UIGestureRecognizerDelegate {
         return value >= 10 ? String(format: "%.0f", value) : String(format: "%.1f", value)
     }
 
-    private func drawBar(value: Double, maximum: Double, x: CGFloat, width: CGFloat, plot: CGRect, color: UIColor) {
-        let height = max(value > 0 ? 4 : 0, plot.height * CGFloat(value / maximum))
+    /// One bar, stacked from the bottom. Segments share a single rounded outline and are parted by a thin gap.
+    /// A bar with an `outline` is a day still in progress: a lighter fill inside a crisp edge.
+    private func drawBar(_ segments: [(value: Double, color: UIColor)], maximum: Double, x: CGFloat, width: CGFloat,
+                         plot: CGRect, emphasis: CGFloat, outline: UIColor?) {
+        let total = segments.map(\.value).reduce(0, +)
+        guard total > 0, let context = UIGraphicsGetCurrentContext() else { return }
+        let height = max(4, plot.height * CGFloat(total / maximum))
         let rect = CGRect(x: x, y: plot.maxY - height, width: width, height: height)
-        let path = UIBezierPath(roundedRect: rect, cornerRadius: min(width / 2, 5))
-        color.setFill()
-        path.fill()
+        let radius = min(width / 2, 5)
+        context.saveGState()
+        UIBezierPath(roundedRect: rect, cornerRadius: radius).addClip()
+        var bottom = rect.maxY
+        for segment in segments where segment.value > 0 {
+            let top = bottom - height * CGFloat(segment.value / total)
+            let base = bottom < rect.maxY ? bottom - 1.5 : bottom
+            segment.color.withAlphaComponent(emphasis * (outline == nil ? 1 : 0.4)).setFill()
+            UIBezierPath(rect: CGRect(x: rect.minX, y: top, width: rect.width, height: max(0, base - top))).fill()
+            bottom = top
+        }
+        context.restoreGState()
+        guard let outline else { return }
+        let edge = UIBezierPath(roundedRect: rect.insetBy(dx: 0.6, dy: 0.6), cornerRadius: max(0, radius - 0.6))
+        edge.lineWidth = 1.2
+        outline.withAlphaComponent(emphasis).setStroke()
+        edge.stroke()
     }
 
     private func drawEmptyState(in rect: CGRect) {
@@ -228,7 +277,8 @@ final class UsageChartView: UIView, UIGestureRecognizerDelegate {
             let point = points[selectedIndex]
             accessibilityValue = String(format: "%@，%@ %.2f 度", point.date.formatted(date: .abbreviated, time: .omitted), series.title, series.value(for: point))
         } else {
-            accessibilityValue = String(format: "当前显示%@，近 7 日合计 %.2f 度", series.title, total)
+            let average = points.isEmpty ? 0 : total / Double(points.count)
+            accessibilityValue = String(format: "当前显示%@，近 7 日合计 %.2f 度，日均 %.2f 度", series.title, total, average)
         }
     }
 }

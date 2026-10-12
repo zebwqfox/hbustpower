@@ -233,6 +233,7 @@ private final class SummaryCell: UITableViewCell {
         bolt.tintColor = PowerTheme.accent
         bolt.preferredSymbolConfiguration = .init(pointSize: 34, weight: .semibold)
         bolt.setContentHuggingPriority(.required, for: .horizontal)
+        total.font = PowerTheme.numberFont(34, weight: .bold, style: .largeTitle)
         total.adjustsFontSizeToFitWidth = true
         total.minimumScaleFactor = 0.6
         total.numberOfLines = 1

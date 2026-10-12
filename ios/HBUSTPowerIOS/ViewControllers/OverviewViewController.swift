@@ -464,9 +464,15 @@ private final class BalanceHeroView: PowerInteractiveControl {
     private let detailLabel = UILabel.powerLabel(nil, style: .caption1, color: .secondaryLabel)
     private let liquid = EnergyLiquidView()
     private let sticker = StickerView(nil, angle: 0.12)
+    /// The latest reading, and what the label shows while it counts toward it.
+    private var balance: Double?
+    private var shownBalance: Double?
+    private var count: (from: Double, start: CFTimeInterval, duration: CFTimeInterval)?
+    private var countLink: CADisplayLink?
     /// Lets the page say something in the theme's voice when the sticker is poked.
     var onStickerTap: (() -> Void)?
-    var summaryText: String { "\(roomLabel.text ?? "") 剩余 \(balanceLabel.text ?? "—") 度，\(forecastLabel.text ?? "")" }
+    var summaryText: String { "\(roomLabel.text ?? "") 剩余 \(balanceText) 度，\(forecastLabel.text ?? "")" }
+    private var balanceText: String { balance.map { String(format: "%.2f", $0) } ?? "—" }
     var forecastText: String { forecastLabel.text ?? "" }
 
     override init(frame: CGRect) {
@@ -497,7 +503,7 @@ private final class BalanceHeroView: PowerInteractiveControl {
         let push = UIPanGestureRecognizer(target: self, action: #selector(pushed(_:)))
         addGestureRecognizer(push)
         let eyebrow = UILabel.powerLabel("剩余电量", style: .subheadline, color: PowerTheme.accent)
-        balanceLabel.font = PowerTheme.font(58, weight: .medium, style: .largeTitle)
+        balanceLabel.font = PowerTheme.numberFont(58, weight: .medium, style: .largeTitle, tabular: true)
         balanceLabel.numberOfLines = 1
         balanceLabel.adjustsFontSizeToFitWidth = true
         balanceLabel.minimumScaleFactor = 0.45
@@ -548,8 +554,59 @@ private final class BalanceHeroView: PowerInteractiveControl {
         isAccessibilityElement = true
         accessibilityTraits = [.button, .summaryElement]
         accessibilityHint = "轻点展开或收起用量估算说明"
+        registerForTraitChanges([UITraitPreferredContentSizeCategory.self]) { (view: BalanceHeroView, _) in
+            if let shown = view.shownBalance { view.showBalance(shown) }
+        }
     }
     @available(*, unavailable) required init?(coder: NSCoder) { fatalError() }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window == nil { stopCounting() } else { countToBalance() }
+    }
+
+    /// The number charges up to a new reading: from zero the first time the card is seen, from the old reading after a
+    /// refresh or a recharge. Offscreen it waits, so the count plays when the card comes back into view.
+    private func countToBalance() {
+        guard let balance, window != nil else { return }
+        let from = shownBalance ?? 0
+        guard !UIAccessibility.isReduceMotionEnabled, abs(balance - from) >= 0.005 else {
+            stopCounting()
+            showBalance(balance)
+            return
+        }
+        count = (from, CACurrentMediaTime(), shownBalance == nil ? 1.1 : 0.7)
+        guard countLink == nil else { return }
+        let link = CADisplayLink(target: self, selector: #selector(countStep(_:)))
+        link.add(to: .main, forMode: .common)
+        countLink = link
+    }
+
+    @objc private func countStep(_ link: CADisplayLink) {
+        guard let count, let balance else { return stopCounting() }
+        let progress = min(1, max(0, (link.timestamp - count.start) / count.duration))
+        showBalance(count.from + (balance - count.from) * (1 - pow(1 - progress, 4)))
+        if progress == 1 { stopCounting() }
+    }
+
+    private func stopCounting() {
+        countLink?.invalidate()
+        countLink = nil
+        count = nil
+    }
+
+    /// Whole degrees at full size; the decimals step down so the eye lands on what matters.
+    private func showBalance(_ value: Double) {
+        shownBalance = value
+        let text = String(format: "%.2f", value)
+        let point = text.firstIndex(of: ".") ?? text.endIndex
+        let whole = PowerTheme.numberFont(58, weight: .medium, style: .largeTitle, tabular: true, compatibleWith: traitCollection)
+        let fraction = PowerTheme.numberFont(34, weight: .medium, style: .largeTitle, tabular: true, compatibleWith: traitCollection)
+        let attributed = NSMutableAttributedString(string: String(text[..<point]), attributes: [.font: whole, .foregroundColor: PowerTheme.accent])
+        attributed.append(NSAttributedString(string: String(text[point...]),
+                                             attributes: [.font: fraction, .foregroundColor: PowerTheme.accent.withAlphaComponent(0.62)]))
+        balanceLabel.attributedText = attributed
+    }
 
     @objc private func pushed(_ gesture: UIPanGestureRecognizer) {
         switch gesture.state {
@@ -585,7 +642,10 @@ private final class BalanceHeroView: PowerInteractiveControl {
 
     func update(_ snapshot: ElectricitySnapshot, threshold: Double) {
         roomLabel.text = snapshot.room ?? "我的宿舍"
-        PowerMotion.replaceText(on: balanceLabel, with: String(format: "%.2f", snapshot.purchasedKWh))
+        if balance != snapshot.purchasedKWh {
+            balance = snapshot.purchasedKWh
+            countToBalance()
+        }
         let isLow = snapshot.purchasedKWh < threshold
         if let lighting = snapshot.recentAverage(kind: "照明"), let ac = snapshot.recentAverage(kind: "空调"), lighting + ac > 0 {
             explanationLabel.text = String(format: "近期日均 %.2f 度，剩余电量 ÷ 日均用量 = 预计天数", lighting + ac)
@@ -606,7 +666,7 @@ private final class BalanceHeroView: PowerInteractiveControl {
         if let price = snapshot.unitPrice { details.append(String(format: "电价 %.2f 元/度", price)) }
         detailLabel.text = details.joined(separator: "  ·  ")
         detailLabel.isHidden = details.isEmpty
-        accessibilityLabel = "\(sticker.text ?? "")。\(roomLabel.text ?? "")，剩余电量 \(balanceLabel.text ?? "") 度。\(forecastLabel.text ?? "")。\(detailLabel.text ?? "")"
+        accessibilityLabel = "\(sticker.text ?? "")。\(roomLabel.text ?? "")，剩余电量 \(balanceText) 度。\(forecastLabel.text ?? "")。\(detailLabel.text ?? "")"
     }
 }
 
@@ -641,7 +701,7 @@ private final class MetricTileView: PowerInteractiveControl {
         let header = UIStackView(arrangedSubviews: [symbol, UILabel.powerLabel(title, style: .subheadline, color: .secondaryLabel), UIView()])
         header.alignment = .center
         header.spacing = 8
-        valueLabel.font = PowerTheme.font(30, weight: .medium, style: .title1)
+        valueLabel.font = PowerTheme.numberFont(30, weight: .medium, style: .title1)
         let stack = UIStackView(arrangedSubviews: [header, valueLabel, UILabel.powerLabel("度 / 天  ↗", style: .caption1, color: .secondaryLabel)])
         stack.isUserInteractionEnabled = false
         stack.axis = .vertical
@@ -701,6 +761,7 @@ private final class InsightCardView: PowerInteractiveControl {
         symbol.preferredSymbolConfiguration = .init(pointSize: 17, weight: .semibold)
         symbol.contentMode = .left
         let value = UILabel.powerLabel(insight.value, style: .title3, weight: .bold)
+        value.font = PowerTheme.numberFont(20, weight: .bold, style: .title3)
         value.numberOfLines = 1
         value.adjustsFontSizeToFitWidth = true
         value.minimumScaleFactor = 0.7

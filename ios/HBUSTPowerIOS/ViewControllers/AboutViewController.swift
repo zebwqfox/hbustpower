@@ -57,7 +57,7 @@ final class AboutViewController: ModelViewController {
         stack.addArrangedSubview(DoodleHeadingView("开发者的话", seed: 5))
         stack.addArrangedSubview(PaperNoteView(text: DeveloperProfile.note, signature: "— " + DeveloperProfile.name))
         stack.setCustomSpacing(34, after: stack.arrangedSubviews.last!)
-        stack.addArrangedSubview(DoodleHeadingView("最近更新", detail: "轻点展开看看这一版改了什么", seed: 9))
+        stack.addArrangedSubview(DoodleHeadingView("最近更新", seed: 9))
         let timeline = UIStackView()
         timeline.axis = .vertical
         let recent = Changelog.releases.prefix(3)
@@ -67,7 +67,7 @@ final class AboutViewController: ModelViewController {
             })
         }
         stack.addArrangedSubview(timeline)
-        let allReleases = PowerTheme.button("查看全部 \(Changelog.releases.count) 个版本的更新日志", image: "list.bullet.rectangle")
+        let allReleases = PowerTheme.button("全部更新日志", image: "list.bullet.rectangle")
         allReleases.addAction(UIAction { [weak self] _ in
             self?.navigationController?.pushViewController(ChangelogViewController(), animated: true)
         }, for: .touchUpInside)
@@ -78,7 +78,7 @@ final class AboutViewController: ModelViewController {
             feedback.addAction(UIAction { _ in UIApplication.shared.open(url) }, for: .touchUpInside)
             stack.addArrangedSubview(feedback)
         }
-        let diagnostics = PowerTheme.button("遇到问题？看看诊断信息", image: "stethoscope")
+        let diagnostics = PowerTheme.button("调试与诊断", image: "stethoscope")
         diagnostics.addAction(UIAction { [weak self] _ in
             guard let self else { return }
             self.navigationController?.pushViewController(DebugViewController(model: self.model), animated: true)

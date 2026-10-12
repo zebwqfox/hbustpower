@@ -32,7 +32,7 @@ final class ChangelogViewController: UIViewController {
         width.priority = UILayoutPriority(999)
         width.isActive = true
 
-        stack.addArrangedSubview(DoodleHeadingView("每一版都改了什么", detail: "从新到旧，共 \(Changelog.releases.count) 个版本", seed: 17))
+        stack.addArrangedSubview(DoodleHeadingView("每一版都改了什么", seed: 17))
         let current = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
         for release in Changelog.releases {
             stack.addArrangedSubview(ReleaseCardView(release: release, isInstalled: release.version == current))

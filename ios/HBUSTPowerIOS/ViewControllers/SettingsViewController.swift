@@ -61,13 +61,13 @@ final class SettingsViewController: ModelViewController, UITableViewDataSource, 
 
     private func makeSections() -> [Section] {
         var result: [Section] = [
-            Section(header: "外观", footer: "主题只改变颜色和一点小彩蛋。紫鸟紫、枫烻黄的配色来自朋友。", rows: [
+            Section(header: "外观", footer: nil, rows: [
                 Row(title: "主题", detail: PowerTheme.style.name, symbol: "paintpalette.fill",
                     accessory: .disclosureIndicator,
                     action: { [weak self] in self?.push(ThemePickerViewController()) })
             ]),
             Section(header: "提醒",
-                    footer: "打开应用或回到前台更新时，电量首次低于设定值时提醒一次；回升后再次变低会重新提醒。需允许系统通知。",
+                    footer: "打开应用或回到前台更新时检查，低于设定值提醒一次。需允许系统通知。",
                     rows: [
                         Row(title: "低电量提醒", detail: String(format: "低于 %.0f 度", model.lowBalanceThreshold),
                             symbol: "bell.badge.fill", accessory: .disclosureIndicator,
@@ -84,7 +84,7 @@ final class SettingsViewController: ModelViewController, UITableViewDataSource, 
         if model.isUpdateCheckAvailable {
             result.append(Section(
                 header: "更新",
-                footer: "每次启动检查一次，只读取作者站点上的一个版本信息文件，不上传任何内容；应用不会自行下载或安装，点“去下载”后在 Safari 里完成。",
+                footer: "只读取版本与公告信息，不上传任何内容。",
                 rows: [
                     Row(title: "检查更新", detail: updateDetail, symbol: "arrow.down.circle",
                         accessory: .disclosureIndicator,
@@ -96,14 +96,14 @@ final class SettingsViewController: ModelViewController, UITableViewDataSource, 
         if model.isTelemetryAvailable {
             result.append(Section(
                 header: "帮助改进",
-                footer: "每天最多上报一次：应用版本、系统版本、设备型号和一个随机生成的安装标识。"
-                    + "不含账号、宿舍号、电量或任何位置信息，也不读取设备识别码。关掉后本机标识一并删除，不影响任何功能。",
+                // The exact fields are one tap away in "看看会上报什么"; the footer only keeps the promises.
+                footer: "每天最多一次，不含账号、宿舍号和电量；关闭后本机标识一并删除。",
                 rows: [
-                    Row(title: "匿名使用统计", detail: model.telemetryEnabled ? "已开启" : "已关闭",
+                    Row(title: "匿名使用统计",
                         symbol: "chart.bar.fill",
                         toggle: model.telemetryEnabled,
                         onToggle: { [weak self] isOn in self?.model.setTelemetryEnabled(isOn) }),
-                    Row(title: "看看会上报什么", detail: "逐项列出", symbol: "eye",
+                    Row(title: "看看会上报什么", symbol: "eye",
                         accessory: .disclosureIndicator,
                         action: { [weak self] in self?.showTelemetryPreview() })
                 ]
@@ -111,7 +111,7 @@ final class SettingsViewController: ModelViewController, UITableViewDataSource, 
         }
 
         result.append(Section(header: "调试", footer: nil, rows: [
-            Row(title: "调试与诊断", detail: "通知 · 连接 · 日志", symbol: "stethoscope",
+            Row(title: "调试与诊断", symbol: "stethoscope",
                 accessory: .disclosureIndicator,
                 action: { [weak self] in
                     guard let self else { return }
@@ -120,7 +120,7 @@ final class SettingsViewController: ModelViewController, UITableViewDataSource, 
         ]))
 
         result.append(Section(header: "关于", footer: nil, rows: [
-            Row(title: "关于湖科电量", detail: "开发者的话 · 更新日志", symbol: "bolt.circle.fill",
+            Row(title: "关于湖科电量", symbol: "bolt.circle.fill",
                 accessory: .disclosureIndicator,
                 action: { [weak self] in
                     guard let self else { return }
@@ -133,7 +133,7 @@ final class SettingsViewController: ModelViewController, UITableViewDataSource, 
 
         if let policy = CloudEndpoints.privacyPolicyURL {
             result[result.count - 1].rows.append(
-                Row(title: "隐私政策", detail: "不上传电量数据 · 统计可关闭", symbol: "hand.raised.fill",
+                Row(title: "隐私政策", symbol: "hand.raised.fill",
                     accessory: .disclosureIndicator,
                     action: { UIApplication.shared.open(policy) })
             )

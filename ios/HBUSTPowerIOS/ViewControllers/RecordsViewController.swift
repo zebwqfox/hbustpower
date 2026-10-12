@@ -154,14 +154,13 @@ final class RecordsViewController: ModelViewController, UITableViewDataSource, U
         switch model.status {
         case .authenticationRequired:
             configuration.text = "登录后查看记录"
-            configuration.secondaryText = "连接智慧湖科，查看充值与补助明细。"
             configuration.button.title = "登录智慧湖科"
             configuration.buttonProperties.primaryAction = UIAction { [weak self] _ in self?.presentLoginIfNeeded() }
         case .error:
             configuration.text = "暂时无法读取记录"
             configuration.secondaryText = "检查网络后，下拉重试。"
         default:
-            configuration.secondaryText = model.status == .loading ? "请稍候" : "充值与补助到账后，会显示在这里。"
+            break
         }
         let emptyView = UIContentUnavailableView(configuration: configuration)
         tableView.backgroundView = emptyView

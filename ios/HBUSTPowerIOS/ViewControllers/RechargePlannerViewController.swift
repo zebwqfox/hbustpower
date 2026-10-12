@@ -96,9 +96,9 @@ final class RechargePlannerViewController: UIViewController {
         stack.addArrangedSubview(result)
         resultCard = result
 
-        stack.addArrangedSubview(roommateRow())
-        let estimate = UILabel.powerLabel("按最近 7 个有记录日的平均用量估算，实际会随用电变化。", style: .caption1, color: .tertiaryLabel)
-        stack.addArrangedSubview(estimate)
+        // The context line at the top already names the daily average everything here is based on.
+        let roommateCard = roommateRow()
+        stack.addArrangedSubview(roommateCard)
 
         let copy = PowerTheme.button("复制给室友", image: "doc.on.doc")
         copy.addAction(UIAction { [weak self] _ in self?.copySummary() }, for: .touchUpInside)
@@ -111,7 +111,7 @@ final class RechargePlannerViewController: UIViewController {
         let actions = UIStackView(arrangedSubviews: [copy, go])
         actions.spacing = 12
         actions.distribution = .fillEqually
-        stack.setCustomSpacing(22, after: estimate)
+        stack.setCustomSpacing(22, after: roommateCard)
         stack.addArrangedSubview(actions)
         update(animated: false)
     }
@@ -232,7 +232,7 @@ final class RechargePlannerViewController: UIViewController {
             let plan = planner.plan(until: datePicker.date)
             if plan.amount == 0 {
                 set(headline, "现有电量够用 🎉", animated: animated)
-                set(detail, "用到 \(Self.day(datePicker.date)) 不用充，按近期用量估算", animated: animated)
+                set(detail, "用到 \(Self.day(datePicker.date)) 不用充", animated: animated)
             } else {
                 set(headline, "至少充 ¥\(plan.amount)", animated: animated)
                 set(detail, String(format: "用到 %@ 还差约 %.1f 度", Self.day(datePicker.date), plan.neededKWh), animated: animated)

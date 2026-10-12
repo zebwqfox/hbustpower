@@ -9,7 +9,7 @@ final class UsageViewController: ModelViewController {
     private let lightingLegend = PowerActionButton(type: .system)
     private let acLegend = PowerActionButton(type: .system)
     private var selectedSeries: UsageSeries = .total
-    private let selectedDayLabel = UILabel.powerLabel("轻点或横向滑动图表，查看当天用量", style: .subheadline, color: PowerTheme.accent)
+    private let selectedDayLabel = UILabel.powerLabel(nil, style: .subheadline, color: PowerTheme.accent)
     private let clearSelectionButton = PowerTheme.button("查看整周", image: "arrow.uturn.backward")
     private var hasRevealed = false
     private lazy var maxWidth = stack.widthAnchor.constraint(lessThanOrEqualToConstant: PowerLayout.readableWidth)
@@ -63,11 +63,10 @@ final class UsageViewController: ModelViewController {
     }
 
     private func updateSelectedDay(_ point: DailyUsagePoint?) {
-        if let point {
-            selectedDayLabel.text = String(format: "%@ · %@ %.2f 度", point.date.formatted(.dateTime.month().day()), selectedSeries.title, selectedSeries.value(for: point))
-        } else {
-            selectedDayLabel.text = "轻点或横向滑动图表，查看当天用量"
+        selectedDayLabel.text = point.map {
+            String(format: "%@ · %@ %.2f 度", $0.date.formatted(.dateTime.month().day()), selectedSeries.title, selectedSeries.value(for: $0))
         }
+        selectedDayLabel.isHidden = point == nil
         clearSelectionButton.isHidden = point == nil
     }
 
@@ -79,8 +78,9 @@ final class UsageViewController: ModelViewController {
         guard let snapshot = model.snapshot else {
             chart.points = []
             [lightingTotalLabel, acTotalLabel, sharePercentLabel, dailyAverageLabel, trendLabel, peakLabel].forEach { $0.text = "—" }
-            shareDetailLabel.text = "连接学校账户后查看用量"
+            shareDetailLabel.text = nil
             rangeNoteLabel.text = "暂无用量数据"
+            rangeNoteLabel.isHidden = false
             return
         }
 
@@ -104,7 +104,7 @@ final class UsageViewController: ModelViewController {
         if total > 0 {
             let share = acTotal / total
             sharePercentLabel.text = String(format: "%.0f%%", share * 100)
-            shareDetailLabel.text = String(format: "空调 %.2f 度 / 总计 %.2f 度", acTotal, total)
+            shareDetailLabel.text = String(format: "总计 %.2f 度", total)
         } else {
             sharePercentLabel.text = "—"
             shareDetailLabel.text = "暂无用量"
@@ -126,12 +126,14 @@ final class UsageViewController: ModelViewController {
             trendLabel.textColor = .secondaryLabel
         }
 
-        let containsToday = current.contains { Calendar.current.isDateInToday($0.date) }
-        if containsToday {
-            rangeNoteLabel.text = "今日数据截至 \(snapshot.fetchedAt.formatted(date: .omitted, time: .shortened)) · 日均按 \(dayCount) 个自然日计算"
-        } else {
-            rangeNoteLabel.text = "日均按图中 \(dayCount) 个自然日计算"
+        // Only what the numbers above don't already say: today is partial, and a short week averages fewer days.
+        var notes: [String] = []
+        if current.contains(where: { Calendar.current.isDateInToday($0.date) }) {
+            notes.append("今日数据截至 \(snapshot.fetchedAt.formatted(date: .omitted, time: .shortened))")
         }
+        if (1..<7).contains(current.count) { notes.append("日均按 \(current.count) 天计算") }
+        rangeNoteLabel.text = notes.joined(separator: " · ")
+        rangeNoteLabel.isHidden = notes.isEmpty
         let updated = "更新于 " + snapshot.fetchedAt.formatted(date: .omitted, time: .shortened)
         switch model.status {
         case .loading: statusLabel.text = "正在更新… · " + updated
@@ -190,6 +192,7 @@ final class UsageViewController: ModelViewController {
         chart.translatesAutoresizingMaskIntoConstraints = false
         chartCard.stack.addArrangedSubview(chart)
         chartHeight.isActive = true
+        selectedDayLabel.isHidden = true
         chartCard.stack.addArrangedSubview(selectedDayLabel)
         chartCard.stack.addArrangedSubview(clearSelectionButton)
         clearSelectionButton.addAction(UIAction { [weak self] _ in self?.chart.clearSelection() }, for: .touchUpInside)
@@ -223,7 +226,7 @@ final class UsageViewController: ModelViewController {
         stack.addArrangedSubview(shareCard)
 
         stack.setCustomSpacing(22, after: shareCard)
-        stack.addArrangedSubview(sectionHeader("这周的用电情况", detail: "最近有记录的日期"))
+        stack.addArrangedSubview(PowerTheme.heading("这周的用电情况"))
         let insights = PowerCardView(spacing: 0, contentInsets: .zero)
         insights.stack.addArrangedSubview(insightRow(icon: "sum", title: "近 7 日日均", value: dailyAverageLabel, tint: PowerTheme.accent))
         insights.stack.addArrangedSubview(separator())
@@ -334,10 +337,6 @@ final class UsageViewController: ModelViewController {
         card.stack.addArrangedSubview(header)
         card.stack.addArrangedSubview(label)
         return card
-    }
-
-    private func sectionHeader(_ title: String, detail: String) -> UIView {
-        PowerTheme.heading(title, detail: detail)
     }
 
     private func insightRow(icon: String, title: String, value: UILabel, tint: UIColor) -> UIView {

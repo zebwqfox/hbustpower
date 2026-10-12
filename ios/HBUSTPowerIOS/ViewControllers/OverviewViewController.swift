@@ -17,7 +17,7 @@ final class OverviewViewController: ModelViewController {
     private let meterStack = UIStackView()
     private let statusLabel = UILabel.powerLabel(nil, style: .footnote, color: .secondaryLabel)
     private let welcomeTitle = UILabel.powerLabel("宿舍用电，\n心里有数。", style: .largeTitle, weight: .semibold)
-    private let welcomeDetail = UILabel.powerLabel(nil, style: .body, color: .secondaryLabel)
+    private let welcomeDetail = UILabel.powerLabel("看看还剩多少电、还能用多久。", style: .body, color: .secondaryLabel)
     private let welcomeButton = PowerTheme.button("登录智慧湖科", image: "arrow.right", primary: true)
     private let rechargeButton = PowerTheme.button("电费充值", image: "plus", primary: true)
     private let planButton = PowerTheme.button("算一算", image: "yensign.circle")
@@ -79,7 +79,6 @@ final class OverviewViewController: ModelViewController {
         planButton.isEnabled = model.snapshot != nil
 
         guard let snapshot = model.snapshot else {
-            updateWelcome()
             updateConnection()
             return
         }
@@ -93,7 +92,7 @@ final class OverviewViewController: ModelViewController {
         case .loading: statusLabel.text = "正在更新… · " + updated
         case .authenticationRequired: statusLabel.text = "登录已过期 · 当前显示上次数据"
         case .error: statusLabel.text = "更新失败，下拉重试 · " + updated
-        default: statusLabel.text = updated + " · 下拉刷新"
+        default: statusLabel.text = updated
         }
     }
 
@@ -166,7 +165,7 @@ final class OverviewViewController: ModelViewController {
         rechargeButton.accessibilityIdentifier = "overview.recharge"
         rechargeButton.addTarget(self, action: #selector(rechargeTapped), for: .touchUpInside)
         planButton.addAction(UIAction { [weak self] _ in self?.showPlanner() }, for: .touchUpInside)
-        let usageHeader = DoodleHeadingView("每天用了多少", detail: "最近 7 个有记录日的平均用量", seed: 3)
+        let usageHeader = DoodleHeadingView("每天用了多少", seed: 3)
         secondaryColumn.addArrangedSubview(usageHeader)
         metrics.addArrangedSubview(lightingTile)
         metrics.addArrangedSubview(acTile)
@@ -210,9 +209,6 @@ final class OverviewViewController: ModelViewController {
         welcome.setCustomSpacing(34, after: welcomeDetail)
         welcomeButton.addTarget(self, action: #selector(welcomeTapped), for: .touchUpInside)
         welcome.addArrangedSubview(welcomeButton)
-        let note = UILabel.powerLabel("通过学校账户连接 · 登录信息保存在本机", style: .caption1, color: .secondaryLabel)
-        note.textAlignment = .center
-        welcome.addArrangedSubview(note)
     }
 
     private func configureConnection() {
@@ -235,18 +231,16 @@ final class OverviewViewController: ModelViewController {
         if case .error = model.status {
             connectionSpinner.stopAnimating()
             connectionTitle.text = "暂时无法更新"
-            connectionDetail.text = "检查网络后再试一次。\n已有登录信息会继续保留。"
+            connectionDetail.text = "检查网络后再试一次。"
+            connectionDetail.isHidden = false
             retryButton.isHidden = false
         } else {
+            // The spinner already says "please wait".
             connectionSpinner.startAnimating()
             connectionTitle.text = "正在读取电量"
-            connectionDetail.text = "正在恢复连接，请稍候…"
+            connectionDetail.isHidden = true
             retryButton.isHidden = true
         }
-    }
-
-    private func updateWelcome() {
-        welcomeDetail.text = "看看还剩多少电、还能用多久。\n照明与空调用量，一眼看清。"
     }
 
     override func viewDidLayoutSubviews() {
@@ -302,7 +296,7 @@ final class OverviewViewController: ModelViewController {
     private func rebuildMeters(_ meters: [MeterStatus]) {
         meterStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
         if meters.isEmpty {
-            let empty = PowerTheme.heading("暂无设备信息", detail: "学校返回设备状态后会显示在这里")
+            let empty = PowerTheme.heading("暂无设备信息")
             empty.isLayoutMarginsRelativeArrangement = true
             empty.directionalLayoutMargins = .init(top: 20, leading: 20, bottom: 20, trailing: 20)
             meterStack.addArrangedSubview(empty)
@@ -321,7 +315,7 @@ final class OverviewViewController: ModelViewController {
     private func configureInsights() {
         insightsSection.axis = .vertical
         insightsSection.spacing = 14
-        insightsSection.addArrangedSubview(DoodleHeadingView("用电小发现", detail: "左右滑动，长按可以复制", seed: 11))
+        insightsSection.addArrangedSubview(DoodleHeadingView("用电小发现", seed: 11))
         let scroller = insightsScroller
         scroller.showsHorizontalScrollIndicator = false
         scroller.alwaysBounceHorizontal = true
@@ -455,7 +449,7 @@ final class OverviewViewController: ModelViewController {
 private final class BalanceHeroView: PowerInteractiveControl {
     var onExpansion: (() -> Void)?
     private let explanationLabel = UILabel.powerLabel(nil, style: .subheadline, color: PowerTheme.accent)
-    private let disclosureLabel = UILabel.powerLabel("轻点查看用量估算 ↓", style: .caption1, color: PowerTheme.accent)
+    private let disclosureLabel = UILabel.powerLabel("估算依据 ↓", style: .caption1, color: PowerTheme.accent)
     private var expanded = false
     private let roomLabel = UILabel.powerLabel(nil, style: .subheadline, weight: .medium, color: PowerTheme.accent)
     private let balanceLabel = UILabel.powerLabel("—", style: .largeTitle, weight: .medium, color: PowerTheme.accent)
@@ -573,7 +567,7 @@ private final class BalanceHeroView: PowerInteractiveControl {
         liquid.slosh(0.6)
         superview?.layoutIfNeeded()
         expanded.toggle()
-        disclosureLabel.text = expanded ? "收起估算说明 ↑" : "轻点查看用量估算 ↓"
+        disclosureLabel.text = expanded ? "收起 ↑" : "估算依据 ↓"
         accessibilityValue = expanded ? explanationLabel.text : "估算说明已收起"
         PowerMotion.animate {
             self.explanationLabel.isHidden = !self.expanded
@@ -587,11 +581,11 @@ private final class BalanceHeroView: PowerInteractiveControl {
         PowerMotion.replaceText(on: balanceLabel, with: String(format: "%.2f", snapshot.purchasedKWh))
         let isLow = snapshot.purchasedKWh < threshold
         if let lighting = snapshot.recentAverage(kind: "照明"), let ac = snapshot.recentAverage(kind: "空调"), lighting + ac > 0 {
-            explanationLabel.text = String(format: "近期日均 %.2f 度。剩余电量 ÷ 日均用量，即为预计天数；实际时长会随用电变化。", lighting + ac)
+            explanationLabel.text = String(format: "近期日均 %.2f 度，剩余电量 ÷ 日均用量 = 预计天数", lighting + ac)
         } else {
-            explanationLabel.text = "有照明和空调的用量记录后，会根据剩余电量与日均用量估算可用天数。"
+            explanationLabel.text = "剩余电量 ÷ 日均用量 = 预计天数"
         }
-        forecastLabel.text = snapshot.predictedDays.map { String(format: "按近期用量，约可用 %.1f 天", $0) } ?? "用量记录充足后，可估算使用天数"
+        forecastLabel.text = snapshot.predictedDays.map { String(format: "约可用 %.1f 天", $0) } ?? "用量记录充足后，可估算使用天数"
         if isLow { forecastLabel.text = "电量偏低，记得及时充值" }
         forecastLabel.textColor = isLow ? PowerTheme.lighting : PowerTheme.accent
         // A month of forecast fills the card; without a forecast, 300 kWh does.

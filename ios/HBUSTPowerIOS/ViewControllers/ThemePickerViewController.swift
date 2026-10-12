@@ -32,16 +32,13 @@ final class ThemePickerViewController: UIViewController {
         width.priority = UILayoutPriority(999)
         width.isActive = true
 
-        stack.addArrangedSubview(DoodleHeadingView("换个颜色", detail: "选中的主题再点一下，会有小动静", seed: 27))
+        stack.addArrangedSubview(DoodleHeadingView("换个颜色", seed: 27))
         for style in PowerThemeStyle.allCases {
             let card = ThemeCardView(style: style)
             card.addAction(UIAction { [weak self] _ in self?.choose(style) }, for: .touchUpInside)
             cards[style] = card
             stack.addArrangedSubview(card)
         }
-        let note = UILabel.powerLabel("主题只改变颜色和一点小彩蛋，数据和功能完全一样。", style: .caption1, color: .tertiaryLabel)
-        stack.setCustomSpacing(22, after: stack.arrangedSubviews.last!)
-        stack.addArrangedSubview(note)
         updateSelection()
     }
 

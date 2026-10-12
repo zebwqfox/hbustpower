@@ -17,7 +17,7 @@ final class CampusCardViewController: UIViewController, WKNavigationDelegate {
     private var liveViews: [UIView] = []
     private let unavailable = FeatureUnavailableView(
         title: "校园卡暂时不可用",
-        detail: "一卡通门户改版后这里读不到余额，修好会随新版本恢复。电量查询不受影响。"
+        detail: "电量查询不受影响。"
     )
     private var task: Task<Void, Never>?
     private var generation = 0
@@ -213,7 +213,8 @@ final class CampusCardViewController: UIViewController, WKNavigationDelegate {
         generation += 1; task?.cancel(); watchdog?.cancel()
         PowerDiagnostics.shared.record("校园卡：" + reason)
         spinner.stopAnimating(); login.isHidden = false
-        note.text = hasBalance ? "余额未更新，可重新连接校园卡。" : "暂时无法读取余额，请连接校园卡后重试。"
+        // The "连接校园卡" button right below says what to do next.
+        note.text = hasBalance ? "余额未更新" : "暂时无法读取余额"
     }
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation?, withError error: Error) {
         guard (error as NSError).code != NSURLErrorCancelled else { return }

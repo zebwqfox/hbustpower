@@ -1,5 +1,7 @@
 package com.zebwqfox.hbustpower.ui
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
 import com.zebwqfox.hbustpower.model.ElectricitySnapshot
 import com.zebwqfox.hbustpower.model.DailyUsagePoint
 import com.zebwqfox.hbustpower.model.RechargeRecord
@@ -8,7 +10,9 @@ import com.zebwqfox.hbustpower.ui.components.HandDrawn
 import com.zebwqfox.hbustpower.ui.screens.UsageChartScale
 import com.zebwqfox.hbustpower.ui.screens.UsageSeries
 import com.zebwqfox.hbustpower.ui.screens.UsageWeek
+import com.zebwqfox.hbustpower.ui.screens.balanceFigure
 import com.zebwqfox.hbustpower.ui.screens.forecastText
+import com.zebwqfox.hbustpower.ui.screens.rangeNote
 import com.zebwqfox.hbustpower.ui.screens.sortedRecords
 import com.zebwqfox.hbustpower.ui.screens.stickerFor
 import org.junit.Assert.assertEquals
@@ -62,12 +66,33 @@ class ScreenRulesTest {
         // 60 kWh / 10 kWh per day = 6 days.
         val sixDays = snapshot(60.0, 2.0, 8.0, 7)
         assertEquals("省着点用" to false, stickerFor(sixDays, isLow = false))
-        assertEquals("按近期用量，约可用 6.0 天", forecastText(sixDays, isLow = false))
+        assertEquals("约可用 6.0 天", forecastText(sixDays, isLow = false))
         assertEquals("该充电啦" to true, stickerFor(snapshot(20.0, 2.0, 8.0, 7), isLow = false))
         assertEquals("电量充足" to false, stickerFor(snapshot(194.67, 2.0, 8.0, 7), isLow = false))
         assertEquals("该充电啦" to true, stickerFor(sixDays, isLow = true))
         assertEquals("电量偏低，记得及时充值", forecastText(sixDays, isLow = true))
         assertEquals("用量记录充足后，可估算使用天数", forecastText(snapshot(60.0, 0.0, 0.0, 0), isLow = false))
+    }
+
+    @Test fun balanceFigureShrinksOnlyTheDecimals() {
+        val figure = balanceFigure(194.67, Color.Blue)
+        assertEquals("194.67", figure.text)
+        val decimals = figure.spanStyles.single { it.item.fontSize == 34.sp }
+        assertEquals(".67", figure.text.substring(decimals.start, decimals.end))
+        assertEquals("0.00", balanceFigure(0.0, Color.Blue).text)
+    }
+
+    @Test fun rangeNoteOnlySaysWhatTheNumbersDoNot() {
+        val today = LocalDate.of(2026, 9, 17)
+        val full = snapshot(100.0, 2.0, 8.0, 7)
+        val week = UsageWeek.from(full).current
+        // fetchedAt is the epoch, 08:00 in Beijing.
+        assertEquals("今日数据截至 08:00", rangeNote(full, week, today))
+        assertNull(rangeNote(full, week, today.plusDays(1)))
+        val threeDays = UsageWeek.from(snapshot(100.0, 2.0, 8.0, 3)).current
+        assertEquals("日均按 3 天计算", rangeNote(full, threeDays, today.plusDays(1)))
+        assertEquals("今日数据截至 08:00 · 日均按 3 天计算", rangeNote(full, threeDays, today))
+        assertEquals("暂无用量数据", rangeNote(null, emptyList(), today))
     }
 
     @Test fun squiggleIsDeterministicPerSeed() {

@@ -220,14 +220,15 @@ private fun EmptyRecords(status: PowerStatus, onLogin: () -> Unit, onRetry: () -
     ) {
         if (status == PowerStatus.Loading) CircularProgressIndicator(color = colors.accent)
         else Icon(Icons.Filled.Inbox, null, tint = colors.tertiaryText, modifier = Modifier.size(44.dp))
+        // A second line only where it says something the title and the button don't.
         val (title, detail) = when (status) {
-            PowerStatus.AuthenticationRequired -> "登录后查看记录" to "连接智慧湖科，查看充值与补助明细。"
+            PowerStatus.AuthenticationRequired -> "登录后查看记录" to null
             is PowerStatus.Error -> "暂时无法读取记录" to "检查网络后，下拉重试。"
-            PowerStatus.Loading -> "正在读取记录" to "请稍候"
-            else -> "暂无充值记录" to "充值与补助到账后，会显示在这里。"
+            PowerStatus.Loading -> "正在读取记录" to null
+            else -> "暂无充值记录" to null
         }
         Text(title, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
-        Text(detail, color = colors.secondaryText, fontSize = 15.sp, textAlign = TextAlign.Center)
+        detail?.let { Text(it, color = colors.secondaryText, fontSize = 15.sp, textAlign = TextAlign.Center) }
         if (status == PowerStatus.AuthenticationRequired) {
             PowerButton("登录智慧湖科", onLogin, modifier = Modifier.padding(top = 12.dp).widthIn(max = 320.dp))
         }

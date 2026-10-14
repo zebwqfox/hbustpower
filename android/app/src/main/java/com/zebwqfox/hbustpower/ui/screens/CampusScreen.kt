@@ -61,7 +61,7 @@ fun CampusScreen(model: PowerViewModel, onConnect: () -> Unit) {
     if (!model.isFeatureEnabled(CloudConfig.FLAG_CAMPUS_CARD)) {
         PageColumn(spacing = 24.dp) {
             LargeTitleHeader("校园卡")
-            FeatureUnavailable("校园卡暂时不可用", "一卡通门户改版后这里读不到余额，修好会随新版本恢复。电量查询不受影响。")
+            FeatureUnavailable("校园卡暂时不可用", "电量查询不受影响。")
         }
         return
     }
@@ -139,7 +139,7 @@ fun CampusScreen(model: PowerViewModel, onConnect: () -> Unit) {
                     primary = true,
                 )
                 Text(
-                    "在学校官方网页中自行选择卡片充值，本应用不会代为付款。返回应用后会重新查询余额。",
+                    "充值在学校官方网页完成，本应用不经手付款。",
                     color = colors.secondaryText, fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
                 )
             }

@@ -6,11 +6,11 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -56,10 +56,12 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -85,7 +87,11 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -121,6 +127,7 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.util.Locale
 import kotlin.math.abs
+import kotlin.math.pow
 import kotlin.math.roundToInt
 
 @Composable
@@ -193,14 +200,14 @@ private fun Dashboard(
     }
     val secondary: @Composable () -> Unit = {
         Column {
-            DoodleHeading("每天用了多少", seed = 3, detail = "最近 7 个有记录日的平均用量", modifier = Modifier.reveal(2))
+            DoodleHeading("每天用了多少", seed = 3, modifier = Modifier.reveal(2))
             Spacer(Modifier.height(16.dp))
             MetricTiles(snapshot, onOpenUsage, Modifier.reveal(3))
             Spacer(Modifier.height(16.dp))
             PowerButton("查看用量趋势", { onOpenUsage(null) }, icon = Icons.AutoMirrored.Filled.ShowChart)
             if (insights.isNotEmpty()) {
                 Spacer(Modifier.height(30.dp))
-                DoodleHeading("用电小发现", seed = 11, detail = "左右滑动，长按可以复制")
+                DoodleHeading("用电小发现", seed = 11)
                 Spacer(Modifier.height(4.dp))
                 InsightsRow(insights, clipToColumn = layout.isWide) { insight ->
                     when (insight.id) {
@@ -217,7 +224,7 @@ private fun Dashboard(
             MeterCard(snapshot.meters)
             Spacer(Modifier.height(16.dp))
             Text(
-                greeting ?: statusLine(model.status, snapshot, pullHint = true),
+                greeting ?: statusLine(model.status, snapshot),
                 color = if (greeting != null) Power.colors.accent else Power.colors.secondaryText, fontSize = 13.sp,
                 textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().semantics { },
             )
@@ -283,7 +290,17 @@ private fun EvenColumns(primary: @Composable () -> Unit, secondary: @Composable 
 
 internal fun forecastText(snapshot: ElectricitySnapshot, isLow: Boolean): String = when {
     isLow -> "电量偏低，记得及时充值"
-    else -> snapshot.predictedDays?.let { String.format(Locale.ROOT, "按近期用量，约可用 %.1f 天", it) } ?: "用量记录充足后，可估算使用天数"
+    else -> snapshot.predictedDays?.let { String.format(Locale.ROOT, "约可用 %.1f 天", it) } ?: "用量记录充足后，可估算使用天数"
+}
+
+/** Whole degrees at full size; the decimals step down and lighten so the eye lands on what matters. */
+internal fun balanceFigure(value: Double, color: Color): AnnotatedString {
+    val text = String.format(Locale.ROOT, "%.2f", value)
+    val point = text.indexOf('.').takeIf { it >= 0 } ?: text.length
+    return buildAnnotatedString {
+        withStyle(SpanStyle(color = color)) { append(text.substring(0, point)) }
+        withStyle(SpanStyle(color = color.copy(alpha = 0.62f), fontSize = 34.sp)) { append(text.substring(point)) }
+    }
 }
 
 internal fun stickerFor(snapshot: ElectricitySnapshot, isLow: Boolean): Pair<String, Boolean> {
@@ -320,14 +337,36 @@ private fun BalanceHero(
     val lighting = snapshot.recentAverage(MeterKind.LIGHTING)
     val air = snapshot.recentAverage(MeterKind.AIR_CONDITIONING)
     val explanation = if (lighting != null && air != null && lighting + air > 0) {
-        String.format(Locale.ROOT, "近期日均 %.2f 度。剩余电量 ÷ 日均用量，即为预计天数；实际时长会随用电变化。", lighting + air)
-    } else "有照明和空调的用量记录后，会根据剩余电量与日均用量估算可用天数。"
+        String.format(Locale.ROOT, "近期日均 %.2f 度，剩余电量 ÷ 日均用量 = 预计天数", lighting + air)
+    } else "剩余电量 ÷ 日均用量 = 预计天数"
     val details = listOfNotNull(
         snapshot.subsidyKWh?.let { String.format(Locale.ROOT, "补助 %.2f 度", it) },
         snapshot.unitPrice?.let { String.format(Locale.ROOT, "电价 %.2f 元/度", it) },
     ).joinToString("  ·  ")
     val summary = "$room 剩余 $balance 度，$forecast"
     val shape = RoundedCornerShape(30.dp)
+
+    // The figure charges up to each new reading: from zero the first time, from the old reading after a refresh or a
+    // recharge, in step with the liquid. It waits while the card is out of view; Reduce Motion shows it straight away.
+    val target = snapshot.purchasedKWh
+    val reduceMotion = Power.reduceMotion
+    var shown by remember { mutableDoubleStateOf(model.shownBalance ?: if (reduceMotion) target else 0.0) }
+    LaunchedEffect(target, onScreen, reduceMotion) {
+        if (!onScreen) return@LaunchedEffect
+        val from = shown
+        if (reduceMotion || abs(target - from) < 0.005) {
+            shown = target
+            model.shownBalance = target
+            return@LaunchedEffect
+        }
+        val duration = if (model.shownBalance == null) 1100 else 700
+        Animatable(0f).animateTo(1f, tween(duration, easing = { 1f - (1f - it).pow(4) })) {
+            shown = from + (target - from) * value
+            model.shownBalance = shown
+        }
+        shown = target
+        model.shownBalance = target
+    }
 
     Box(modifier.fillMaxWidth().padding(top = 8.dp, end = 6.dp)) {
         Box(
@@ -368,12 +407,14 @@ private fun BalanceHero(
                 Spacer(Modifier.height(22.dp))
                 Text("剩余电量", color = colors.accent, fontSize = 15.sp)
                 Spacer(Modifier.height(9.dp))
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Crossfade(balance, label = "balance") { value ->
-                        Text(value, color = colors.accent, fontSize = 58.sp, lineHeight = 64.sp, fontWeight = FontWeight.Medium, maxLines = 1)
-                    }
+                Row {
+                    Text(
+                        balanceFigure(shown, colors.accent), fontSize = 58.sp, lineHeight = 64.sp, fontWeight = FontWeight.Medium,
+                        maxLines = 1, style = LocalTextStyle.current.copy(fontFeatureSettings = "tnum"),
+                        modifier = Modifier.alignByBaseline(),
+                    )
                     Spacer(Modifier.width(7.dp))
-                    Text("度", color = colors.accent, fontSize = 20.sp, modifier = Modifier.padding(bottom = 10.dp))
+                    Text("度", color = colors.accent, fontSize = 20.sp, modifier = Modifier.alignByBaseline())
                 }
                 Spacer(Modifier.height(9.dp))
                 Text(
@@ -381,7 +422,7 @@ private fun BalanceHero(
                     fontWeight = FontWeight.Medium, textAlign = TextAlign.Center,
                 )
                 Spacer(Modifier.height(20.dp))
-                Text(if (expanded) "收起估算说明 ↑" else "轻点查看用量估算 ↓", color = colors.accent, fontSize = 12.sp)
+                Text(if (expanded) "收起 ↑" else "估算依据 ↓", color = colors.accent, fontSize = 12.sp)
                 AnimatedVisibility(expanded, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
                     Text(
                         explanation, color = colors.accent, fontSize = 15.sp, textAlign = TextAlign.Center,
@@ -620,7 +661,7 @@ private fun MeterCard(meters: List<MeterStatus>) {
     val colors = Power.colors
     PowerCard(padding = PaddingValues(0.dp)) {
         if (meters.isEmpty()) {
-            SectionHeading("暂无设备信息", Modifier.padding(20.dp), detail = "学校返回设备状态后会显示在这里")
+            SectionHeading("暂无设备信息", Modifier.padding(20.dp))
         }
         meters.forEachIndexed { index, meter ->
             if (index > 0) HorizontalDivider(thickness = 0.5.dp, color = colors.separator)
@@ -662,13 +703,13 @@ private fun StrayBirdsCard() {
     }
 }
 
-internal fun statusLine(status: PowerStatus, snapshot: ElectricitySnapshot, pullHint: Boolean): String {
+internal fun statusLine(status: PowerStatus, snapshot: ElectricitySnapshot): String {
     val updated = "更新于 " + formatTime(snapshot.fetchedAt)
     return when (status) {
         PowerStatus.Loading -> "正在更新… · $updated"
         PowerStatus.AuthenticationRequired -> "登录已过期 · 当前显示上次数据"
         is PowerStatus.Error -> "更新失败，下拉重试 · $updated"
-        else -> if (pullHint) "$updated · 下拉刷新" else updated
+        else -> updated
     }
 }
 
@@ -689,9 +730,9 @@ private fun Connection(status: PowerStatus, onRetry: () -> Unit) {
             )
             PowerButton("重新连接", onRetry, icon = Icons.Filled.Refresh, primary = true, modifier = Modifier.reveal(2))
         } else {
+            // The spinner already says "please wait".
             CircularProgressIndicator(color = colors.accent)
             Text("正在读取电量", fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
-            Text("正在恢复连接，请稍候…", color = colors.secondaryText, fontSize = 17.sp, textAlign = TextAlign.Center)
         }
     }
 }
@@ -706,7 +747,7 @@ private fun Welcome(onLogin: () -> Unit) {
             textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().reveal(1).semantics { heading() },
         )
         Text(
-            "看看还剩多少电、还能用多久。\n照明与空调用量，一眼看清。", color = colors.secondaryText, fontSize = 17.sp,
+            "看看还剩多少电、还能用多久。", color = colors.secondaryText, fontSize = 17.sp,
             textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().reveal(2),
         )
         Spacer(Modifier.height(14.dp))

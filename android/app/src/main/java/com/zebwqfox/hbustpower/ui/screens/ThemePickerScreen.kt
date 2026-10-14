@@ -62,10 +62,6 @@ fun ThemePickerScreen(model: PowerViewModel, onBack: () -> Unit) {
     val colors = Power.colors
     var greeting by remember { mutableStateOf<String?>(null) }
     DetailPage("主题", onBack, Icons.AutoMirrored.Filled.ArrowBack) {
-        Text(
-            "换个颜色，整个界面的配色一起变。深色模式下每套主题都有自己的夜间配色。",
-            color = colors.secondaryText, fontSize = 15.sp,
-        )
         PowerThemeStyle.entries.forEach { style ->
             ThemeRow(
                 style = style,

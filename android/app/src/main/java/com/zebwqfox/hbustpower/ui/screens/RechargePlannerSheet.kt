@@ -196,8 +196,6 @@ fun RechargePlannerSheet(snapshot: ElectricitySnapshot, roommates: Int, onRoomma
                 PowerCard(padding = PaddingValues(20.dp)) {
                     if (datePlan.amount == 0) {
                         Text("现有电量够用到那天", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = colors.good)
-                        Spacer(Modifier.height(6.dp))
-                        Text("按近期用量估算，这段时间不用再充。", color = colors.secondaryText, fontSize = 13.sp)
                     } else {
                         Text("至少充 ¥${datePlan.amount}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = colors.accent)
                         Spacer(Modifier.height(6.dp))
@@ -238,10 +236,7 @@ fun RechargePlannerSheet(snapshot: ElectricitySnapshot, roommates: Int, onRoomma
                     )
                 }
             }
-            Text(
-                "以上都是按最近有记录日的平均用量估算，仅供参考；充值仍需在学校官方页面完成。",
-                color = colors.tertiaryText, fontSize = 12.sp,
-            )
+            // No trailing disclaimer: the context line at the top already names the daily average this is based on.
 
             if (picking) {
                 val state = rememberDatePickerState(

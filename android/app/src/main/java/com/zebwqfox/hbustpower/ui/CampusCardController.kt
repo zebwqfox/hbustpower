@@ -156,7 +156,8 @@ class CampusCardController(private val model: PowerViewModel, private val script
         Diagnostics.record("校园卡：$reason")
         loading = false
         showConnect = true
-        note = if (amount != null) "余额未更新，可重新连接校园卡。" else "暂时无法读取余额，请连接校园卡后重试。"
+        // The "连接校园卡" button that appears below says what to do next.
+        note = if (amount != null) "余额未更新" else "暂时无法读取余额"
     }
 
     private val client = object : WebViewClient() {

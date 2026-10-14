@@ -109,19 +109,19 @@ fun AboutScreen(onBack: () -> Unit, onOpen: (String) -> Unit) {
         DoodleHeading("开发者的话", seed = 5)
         PaperNote(DeveloperProfile.note, "— ${DeveloperProfile.NAME}")
         Spacer(Modifier.height(18.dp))
-        DoodleHeading("最近更新", seed = 9, detail = "轻点展开看看这一版改了什么")
+        DoodleHeading("最近更新", seed = 9)
         Column {
             val recent = Changelog.releases.take(3)
             recent.forEachIndexed { index, release ->
                 ReleaseRow(release, isLatest = index == 0, isLast = index == recent.lastIndex)
             }
         }
-        PowerButton("查看全部 ${Changelog.releases.size} 个版本的更新日志", { onOpen("changelog") }, icon = Icons.AutoMirrored.Filled.List)
+        PowerButton("全部更新日志", { onOpen("changelog") }, icon = Icons.AutoMirrored.Filled.List)
         Spacer(Modifier.height(12.dp))
         DeveloperProfile.feedbackUrl?.let { url ->
             PowerButton("给开发者反馈", { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } }, icon = Icons.Filled.Forum, primary = true)
         }
-        PowerButton("遇到问题？看看诊断信息", { onOpen("debug") }, icon = Icons.Filled.MedicalServices)
+        PowerButton("调试与诊断", { onOpen("debug") }, icon = Icons.Filled.MedicalServices)
         Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
             TextButton({ onOpen("legal:PRIVACY") }) { Text("《隐私政策》", color = colors.accent, fontSize = 13.sp) }
@@ -362,7 +362,7 @@ private fun ReleaseRow(release: Changelog.Release, isLatest: Boolean, isLast: Bo
 fun ChangelogScreen(onBack: () -> Unit) {
     val colors = Power.colors
     DetailPage("更新日志", onBack, Icons.AutoMirrored.Filled.ArrowBack) {
-        DoodleHeading("每一版都改了什么", seed = 17, detail = "从新到旧，共 ${Changelog.releases.size} 个版本")
+        DoodleHeading("每一版都改了什么", seed = 17)
         Changelog.releases.forEach { release ->
             PowerCard(padding = PaddingValues(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 20.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

@@ -89,6 +89,12 @@ class PowerViewModel(application: Application) : AndroidViewModel(application) {
     var lastRefreshResult by mutableStateOf("尚未刷新"); private set
     var lastRefreshDurationMillis by mutableStateOf<Long?>(null); private set
 
+    /**
+     * The figure the balance card last showed. Tabs are recomposed from scratch, so it lives here: the card counts
+     * from it to a new reading, and from zero only on the first reading of a launch.
+     */
+    var shownBalance: Double? = null
+
     /** The school entries are built in, exactly as the iOS app ships them. */
     val authUrl: String get() = SchoolEndpoints.AUTH_URL
     val reminderDiagnostic: String get() = reminder.diagnosticStatus

@@ -86,7 +86,7 @@ fun SettingsScreen(model: PowerViewModel, onOpen: (String) -> Unit, onLogin: () 
         LargeTitleHeader("设置")
         GroupedSection(
             "提醒",
-            footer = "打开应用或回到前台更新时，电量首次低于设定值时提醒一次；回升后再次变低会重新提醒。需允许系统通知。",
+            footer = "打开应用或回到前台更新时检查，低于设定值提醒一次。需允许系统通知。",
             rows = listOf(
                 { GroupedRow("低电量提醒", String.format(Locale.ROOT, "低于 %.0f 度", model.lowBalanceThreshold), Icons.Filled.NotificationsActive, disclosure = true) { dialog = "threshold" } },
                 { GroupedRow("系统通知", if (notificationsReady) "已允许" else "未开启", Icons.Filled.Tune, disclosure = true) { openNotificationSettings(context) } },
@@ -108,7 +108,7 @@ fun SettingsScreen(model: PowerViewModel, onOpen: (String) -> Unit, onLogin: () 
         if (model.isUpdateCheckAvailable) {
             GroupedSection(
                 "更新",
-                footer = "每次启动检查一次，只读取作者站点上的一个版本信息文件，不上传任何内容；应用不会自行下载或安装，点“去下载”后在浏览器里完成。",
+                footer = "只读取版本与公告信息，不上传任何内容。",
                 rows = listOf(
                     {
                         GroupedRow(
@@ -130,36 +130,34 @@ fun SettingsScreen(model: PowerViewModel, onOpen: (String) -> Unit, onLogin: () 
         if (model.isTelemetryAvailable) {
             GroupedSection(
                 "帮助改进",
-                footer = "每天最多上报一次：应用版本、系统版本、设备型号和一个随机生成的安装标识。" +
-                    "不含账号、宿舍号、电量或任何位置信息，也不读取设备识别码。关掉后本机标识一并删除，不影响任何功能。",
+                // The exact fields are one tap away in "看看会上报什么"; the footer only keeps the promises.
+                footer = "每天最多一次，不含账号、宿舍号和电量；关闭后本机标识一并删除。",
                 rows = listOf(
                     {
                         GroupedRow(
                             "匿名使用统计",
-                            if (model.telemetryEnabled) "已开启" else "已关闭",
-                            Icons.Filled.Insights,
-                            stacked = true,
+                            icon = Icons.Filled.Insights,
                             trailing = {
                                 Switch(model.telemetryEnabled, { model.updateTelemetryEnabled(it) })
                             },
                         )
                     },
-                    { GroupedRow("看看会上报什么", "逐项列出，可复制", disclosure = true) { dialog = "telemetry" } },
+                    { GroupedRow("看看会上报什么", disclosure = true) { dialog = "telemetry" } },
                 ),
             )
         }
         GroupedSection(
             "调试",
             rows = listOf(
-                { GroupedRow("调试与诊断", "通知 · 连接 · 日志", Icons.Filled.MedicalServices, stacked = true) { onOpen("debug") } },
+                { GroupedRow("调试与诊断", icon = Icons.Filled.MedicalServices, disclosure = true) { onOpen("debug") } },
             ),
         )
         GroupedSection(
             "关于",
             rows = listOf(
-                { GroupedRow("关于湖科电量", "开发者的话 · 更新日志", Icons.Filled.Bolt, stacked = true) { onOpen("about") } },
-                { GroupedRow("更新日志", "版本 ${Changelog.latest.version}", Icons.AutoMirrored.Filled.List, stacked = true) { onOpen("changelog") } },
-                { GroupedRow("隐私政策", "不上传电量数据 · 统计可关闭", Icons.Filled.PrivacyTip, stacked = true) { onOpen("legal:PRIVACY") } },
+                { GroupedRow("关于湖科电量", icon = Icons.Filled.Bolt, disclosure = true) { onOpen("about") } },
+                { GroupedRow("更新日志", "版本 ${Changelog.latest.version}", Icons.AutoMirrored.Filled.List, disclosure = true) { onOpen("changelog") } },
+                { GroupedRow("隐私政策", icon = Icons.Filled.PrivacyTip, disclosure = true) { onOpen("legal:PRIVACY") } },
                 { GroupedRow("用户服务协议", icon = Icons.Filled.Description, disclosure = true) { onOpen("legal:AGREEMENT") } },
             ),
         )

@@ -3,7 +3,7 @@ import UIKit
 /// Everything personal about the app lives here, so it is easy to rewrite in your own words.
 enum DeveloperProfile {
     static let name = "中二"
-    /// Bundled in the asset catalog so the About page works offline. Source: cdn-imfurry.imfurry.com/avatar/zebwqFurryAvatar.png
+    /// Bundled in the asset catalog so the About page works offline.
     static let avatarImageName = "DeveloperAvatar"
     static let tagline = "一个人写的宿舍电量小工具"
     static let note = """

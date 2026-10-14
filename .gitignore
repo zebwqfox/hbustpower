@@ -19,3 +19,7 @@ secrets/secrets.env
 ios/Config/Secrets.xcconfig
 android/secrets.properties
 android/keystore.properties
+
+# Notes about the developer's own server (config format, endpoints, filing form) stay on this machine
+cloud/
+filing/07-域名与服务器说明.md

@@ -14,27 +14,19 @@ iOS 不允许普通 App 在后台长期定时轮询。应用会在启动、回�
 
 ## 检查更新与公告
 
-应用读取一个放在自有站点上的静态 JSON，用来提示新版本、显示公告、在学校页面改版时临时关掉某个入口。
-**只读取、不上传**：普通 GET，不带 Cookie、参数或设备标识。没有任何形式的代码热更新——下发内容只有版本号、
-文字和布尔开关。
+应用读取一个静态 JSON，用来提示新版本、显示公告、在学校页面改版时临时关掉某个入口。
+**只读取、不上传**：普通 GET，不带 Cookie 和设备标识，只附带一个绕过 CDN 旧缓存的 `cacheBust` 时间戳。
+没有任何形式的代码热更新，下发内容只有版本号、文字和布尔开关。
 
-地址配在 `Config/Base.xcconfig`（这些是会随 App 分发的公开值，和 `SCHOOL_APP_KEY` 不同，直接写在这里）：
-
-```
-CLOUD_CONFIG_URL      https://hbustelec.imfurry.com/app/config-ios.json
-CLOUD_DOWNLOAD_HOSTS  cdn-imfurry.imfurry.com
-TELEMETRY_URL         https://hbustelec.imfurry.com/api/v1/report
-PRIVACY_POLICY_URL    https://hbustelec.imfurry.com/privacy-policy.html
-```
-
+地址配在 `Config/Base.xcconfig` 的 `CLOUD_CONFIG_URL`、`CLOUD_DOWNLOAD_HOSTS`、`TELEMETRY_URL` 和
+`PRIVACY_POLICY_URL`。这些值随 App 分发，和 `SCHOOL_APP_KEY` 不同，直接写在那个文件里。
 留空则整个功能不编译进去：不发请求，设置里也不显示对应入口。
 
 代码在 `Services/CloudConfig*.swift`：`CloudConfig` 只做解析与判断（纯值类型，可单测），
-`HTTPCloudConfigFetcher` 负责一次带 ETag、限 64 KB 的请求，`CloudConfigStore` 管缓存、每日一次的节流
-和「跳过这个版本」「关掉这条公告」的记录。
+`HTTPCloudConfigFetcher` 负责一次带 ETag、限 64 KB 的请求，`CloudConfigStore` 管缓存、节流（每次启动都查，
+回到前台最多每 30 分钟一次）和「跳过这个版本」「关掉这条公告」的记录。
 
 **iOS 装不了从网页下载的 ipa。** 点「去下载」只是用 Safari 打开地址，用户仍需自己用 Sideloadly 侧载。
-面板在下载地址不是 `.ipa` 时会提醒。
 
 解析逻辑与 Android 的 `data/CloudConfig.kt` 是同一份契约，两边的单元测试逐条对应
 （`CloudConfigTests.swift` / `CloudConfigTest.kt`），改一边就要看另一边。
@@ -51,7 +43,6 @@ PRIVACY_POLICY_URL    https://hbustelec.imfurry.com/privacy-policy.html
 有意义的样本。`FirstRunViewController` 上那个开关不要挪走。
 
 隐私政策第六条逐条写了这些承诺，`HBUSTPowerIOSTests/TelemetryTests.swift` 逐条测了它们。
-收数据的面板在另一个仓库（`hbustpower-admin`），不在这里。
 
 ## 远程推送
 

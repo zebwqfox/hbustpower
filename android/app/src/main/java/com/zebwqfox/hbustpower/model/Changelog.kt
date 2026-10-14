@@ -11,7 +11,7 @@ object Changelog {
     val latest: Release get() = releases.first()
 
     val releases: List<Release> = listOf(
-        Release("1.9.5", "远程开关全部生效", "公告及时刷新，关闭功能时不再留下其他入口。", listOf(
+        Release("1.9.6", "远程开关全部生效", "公告及时刷新，关闭功能时不再留下其他入口。", listOf(
             Section("修复", listOf(
                 "更新与公告请求会绕过 CDN 旧缓存，发布后立即生效；内容未变化时仍通过 ETag 返回 304",
                 "关闭充值后：首页、充值记录、校园卡页以及已打开的充值页都会立即停止入口",

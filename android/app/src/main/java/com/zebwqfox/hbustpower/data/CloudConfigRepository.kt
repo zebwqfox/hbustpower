@@ -27,9 +27,9 @@ data class CloudConfigState(
 }
 
 /**
- * Keeps the last config on disk and decides when to ask for a new one: once a day on launch, or whenever the
- * user taps "检查更新". The cached copy is what the UI reads, so the app shows the same notice offline as it did
- * online and never waits on the network to draw a screen.
+ * Keeps the last config on disk and decides when to ask for a new one: on every launch, at most every 30 minutes
+ * when the app comes back to the foreground, and whenever the user taps "检查更新". The cached copy is what the UI
+ * reads, so the app shows the same notice offline as it did online and never waits on the network to draw a screen.
  *
  * Nothing here is sent anywhere. The class only reads a file and remembers what the user dismissed.
  */
